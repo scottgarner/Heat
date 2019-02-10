@@ -1,0 +1,180 @@
+<html>
+
+<head>
+    <title>Viewer Page</title>
+    <style>
+        #main {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main"></div>
+
+    <audio id="audio0" src="fade-guitar-clip001.wav"></audio>
+    <audio id="audio1" src="fade-guitar-clip002.wav"></audio>
+    <audio id="audio2" src="fade-guitar-clip003.wav"></audio>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+    <script>
+
+        const params = (new URL(document.location)).searchParams;
+        const channel = params.get("channel") || 97032862;
+
+        console.log("Heat for channel: " + channel);
+
+        //
+
+        const socket = io("wss://twitchheat.herokuapp.com/");
+
+        socket.on('connect', function () {
+            console.log("CONNECTED");
+            socket.emit("channel", channel);
+        });
+
+        socket.on('click', function (data) {
+            const clickData = JSON.parse(data);
+            handleClick(clickData.x, clickData.y);
+        });
+
+        socket.on('clear', function (data) {
+            clearSprites();
+        });
+
+        //
+
+        $(document).click(function (event) {
+            const normalizedX = (event.clientX * 1.0 / $(document).width()).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / $(document).height()).toPrecision(3);
+
+            handleClick(normalizedX, normalizedY);
+        });
+
+        //
+
+        function handleClick(clickX, clickY) {
+
+            const gridX = 6;
+            const gridY = 4;
+
+            let cellFunctions = [];
+
+            for (let x = 0; x < gridX; x++) {
+                cellFunctions[x] = [];
+                for (let y = 0; y < gridY; y++) {
+                    cellFunctions[x][y] = null;
+                }
+            }
+
+            cellFunctions[5][2] = function () {
+                console.log("STRUM");
+
+                let audioIndex = Math.floor(Math.random() * 3);
+
+                $("#audio" + audioIndex)[0].play();
+
+            }
+
+            const cellX = Math.floor(gridX * clickX);
+            const cellY = Math.floor(gridY * clickY);
+
+            console.log(cellX, cellY);
+
+            if (cellFunctions[cellX][cellY] != null) {
+                console.log("WOW");
+                cellFunctions[cellX][cellY]();
+            }
+
+            //
+
+            drawClick(clickX, clickY);
+        }
+
+        //
+
+        let app;
+        let sprites;
+
+        (function () {
+
+            mainDiv = document.getElementById('main');
+
+            // Pixi setup.
+
+            app = new PIXI.Application({
+                width: 300,
+                height: 300,
+                //backgroundColor: 0x0,
+                resizeTo: mainDiv,
+                autoDensity: true,
+                resolution: devicePixelRatio,
+                transparent: true
+            });
+            document.getElementById('main').appendChild(app.view);
+
+            sprites = new PIXI.ParticleContainer(10000, {
+                scale: true,
+                position: true,
+                rotation: true,
+                uvs: true,
+                alpha: true
+            });
+            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+            app.stage.addChild(sprites);
+
+        })();
+
+        function clearSprites() {
+
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let child = sprites.getChildAt(i);
+                child.destroy();
+            }
+
+        }
+
+        function drawClick(clickX, clickY) {
+
+            const screenX = parseInt(clickX * mainDiv.clientWidth);
+            const screenY = parseInt(clickY * mainDiv.clientHeight);
+            const dude = PIXI.Sprite.from('sprites/particle.png');
+
+            dude.anchor.set(0.5);
+            dude.x = screenX;
+            dude.y = screenY;
+            dude.tint = Math.random() * 0x808080;
+
+            sprites.addChild(dude);
+        }
+
+        let clock = 0;
+
+        app.ticker.add(function (delta) {
+
+            sprites.children.forEach(function (child) {
+
+                let scale = ((Math.sin(child.x + child.y + clock / 25)) + 1) / 2.0;
+                child.scale.set(scale * .25);
+
+            });
+
+            clock += delta;
+        });
+
+
+    </script>
+
+</body>
+
+</html>
