@@ -1,0 +1,141 @@
+<html>
+
+<head>
+    <title>Kissing Booth</title>
+    <style>
+        #main {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+        // Local clicks for testing.
+
+        $(document).click(function (event) {
+
+            const normalizedX = (event.clientX * 1.0 / $(document).width()).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / $(document).height()).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY);
+
+        });
+
+        heat.addEventListener('click', (e) => {
+            drawClick(e.detail.x, e.detail.y);
+        });
+
+        //
+
+        let app;
+        let sprites;
+
+        (function () {
+
+            mainDiv = document.getElementById('main');
+
+            // Pixi setup.
+
+            app = new PIXI.Application({
+                width: 300,
+                height: 300,
+                //backgroundColor: 0x0,
+                resizeTo: mainDiv,
+                autoDensity: true,
+                resolution: devicePixelRatio,
+                transparent: true
+            });
+            document.getElementById('main').appendChild(app.view);
+
+            sprites = new PIXI.ParticleContainer(10000, {
+                scale: true,
+                position: true,
+                rotation: true,
+                uvs: true
+            });
+            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+            app.stage.addChild(sprites);
+
+        })();
+
+        var mySpriteSheetImage = PIXI.BaseTexture.from("sprites/kisses.png");
+
+        let kisses = [
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(0, 0, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(128, 0, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(0, 128, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(128, 128, 128, 128))
+        ];
+
+        function clearSprites() {
+
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let child = sprites.getChildAt(i);
+                child.destroy();
+            }
+
+        }
+
+        function drawClick(clickX, clickY) {
+
+            const screenX = parseInt(clickX * mainDiv.clientWidth);
+            const screenY = parseInt(clickY * mainDiv.clientHeight);
+
+            const kissIndex = Math.floor(Math.random() * kisses.length);
+            const kiss = PIXI.Sprite.from(kisses[kissIndex]);
+
+            kiss.anchor.set(0.5);
+            kiss.x = screenX;
+            kiss.y = screenY;
+            kiss.rotation = (Math.random() * (Math.PI / 2.0)) - (Math.PI / 4.0);
+            kiss.tint = 0xc0c0c0 + (0x404040 * Math.random());
+
+            kiss.birth = Date.now();
+            kiss.death = kiss.birth + 1000;
+
+            sprites.addChild(kiss);
+        }
+
+        let clock = 0;
+
+        app.ticker.add(function (delta) {
+
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let kiss = sprites.getChildAt(i);
+
+                let age = (Date.now() - kiss.birth) / (kiss.death - kiss.birth);
+
+                if (age >= 1) {
+                    kiss.destroy();
+                } else {
+                    kiss.scale.set((1 - age));
+                }
+
+
+            };
+
+            clock += delta;
+        });
+
+
+    </script>
+
+</body>
+
+</html>
