@@ -36,7 +36,8 @@
 
         //
 
-        const socket = io("wss://twitchheat.herokuapp.com/");
+        console.log('ws://heat.j38.net/');
+        const socket = io("ws://heat.j38.net/");
 
         socket.on('connect', function () {
             console.log("CONNECTED");
