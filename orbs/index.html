@@ -36,8 +36,10 @@
 
         //
 
-        console.log('wss://heat-ebs.j38.net/');
-        const socket = io("wss://heat-ebs.j38.net/", { transports: ['websocket'] });
+        const url = 'wss://heat-ebs.j38.net/';
+        //const url = 'ws://localhost:3000/';
+
+        const socket = io(url, { transports: ['websocket'] });
 
         socket.on('connect', function () {
             console.log("CONNECTED");
