@@ -84,7 +84,7 @@
 
             //
 
-            const socket = io("wss://twitchheat.herokuapp.com/");
+            const socket = io("wss://heat-ebs.j38.net/");
 
             socket.on('connect', function () {
                 console.log("CONNECTED");
@@ -257,7 +257,7 @@
                 dude.y = screenY;
 
                 dude.birth = Date.now();
-                dude.death = dude.birth + 10000;
+                dude.death = dude.birth + 2000;
 
                 sprites.addChild(dude);
             }
@@ -279,7 +279,7 @@
                         child.destroy();
                     } else {
                         let scale = ((Math.sin(child.x + child.y + clock / 25)) + 1) / 2.0;
-                        child.scale.set(scale * (1 - age) * 4.0);
+                        child.scale.set(scale * (1 - age) * 2.0);
                     }
 
 

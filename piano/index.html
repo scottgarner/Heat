@@ -1,0 +1,248 @@
+<html>
+
+<head>
+    <title>Kissing Booth</title>
+    <style>
+        body {
+            background: rgb(0, 255, 0);
+        }
+
+        #main {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            user-select: none;
+            text-align: center;
+        }
+
+        .key {
+            position: relative;
+            display: inline-block;
+            height: 512px;
+            width: 128px;
+            background: #ffffff;
+            vertical-align: top;
+            border-radius: 0 0 16px 16px;
+
+        }
+
+        .keyBlack {
+            position: relative;
+            top: 0;
+            margin-left: -32px;
+            margin-right: -36px;
+            height: 256px;
+            width: 64px;
+            background: #333333;
+            z-index: 100;
+        }
+
+        .keyPressed {
+            background: #34eee5;
+        }
+
+        .keyOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            border: 8px solid yellow;
+            border-radius: inherit;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+
+
+        <div id="C3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="C#3" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="D3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="D#3" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="E3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="F3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="F#3" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="G3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="G#3" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="A3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="A#3" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="B3" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+
+        <div id="C4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="C#4" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="D4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="D#4" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="E4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="F4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="F#4" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="G4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="G#4" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="A4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="A#4" class="key keyBlack">
+            <div class="keyOverlay"></div>
+        </div>
+        <div id="B4" class="key">
+            <div class="keyOverlay"></div>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.7.4/Tone.min.js"></script>
+
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+        let synth;
+        let totalClickCount = 0;
+
+        (function () {
+
+
+            synth = new Tone.Synth({
+                oscillator: {
+                    type: "square0"
+                },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.1,
+                    sustain: 0.3,
+                    release: 1
+                }
+            }).toMaster();
+
+            heat.addEventListener('click', (e) => {
+
+                const x = parseInt(e.detail.x * $(window).width());
+                const y = parseInt(e.detail.y * $(window).height());
+
+                console.log(x, y);
+
+                var element = document.elementFromPoint(x, y);
+
+                $(element).trigger('click');
+            });
+
+
+            //
+
+            $(".key").each(function (index) {
+                $(this).data("clickCount", 0);
+            });
+
+            $(document).on('click', '.key', function (event) {
+
+                if (Tone.context.state !== 'running') {
+                    Tone.context.resume();
+                }
+
+
+                let clickCount = $(this).data("clickCount");
+                clickCount++;
+                totalClickCount++;
+                $(this).data("clickCount", clickCount);
+
+                $(".key").each(function (index) {
+                    let clickCount = $(this).data("clickCount");
+                    let alpha = (clickCount * 1.0) / totalClickCount;
+                    $(this).find(".keyOverlay").css('opacity', 1 * alpha);
+                });
+
+            });
+
+
+
+
+            Tone.Transport.scheduleRepeat(() => {
+
+                let winner;
+                let winnerCount = 0;
+
+                $(".key").each(function (index) {
+
+                    let clickCount = $(this).data("clickCount");
+
+                    if (clickCount > winnerCount) {
+                        winner = $(this);
+                        winnerCount = clickCount;
+                    }
+
+                    $(this).data("clickCount", 0);
+                    $(this).removeClass("keyPressed");
+                    $(this).find(".keyOverlay").css('opacity', 0);
+                });
+
+                if (winner) {
+
+                    synth.triggerAttackRelease($(winner).attr('id'), "4n");
+                    console.log($(winner).attr('id'));
+
+                    $(winner).addClass("keyPressed");
+                }
+
+                totalClickCount = 0;
+
+            }, "4n");
+
+            Tone.Transport.start();
+
+        })();
+
+    </script>
+
+</body>
+
+</html>
