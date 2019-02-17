@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>PixiJS Shaders</title>
+    <title>Heat Map</title>
     <meta charset="UTF-8">
 
     <style>
@@ -13,11 +13,6 @@
             right: 0;
             bottom: 0;
             user-select: none;
-        }
-
-        #webcam {
-
-            display: none;
         }
     </style>
 
@@ -123,19 +118,6 @@
             });
             document.getElementById('main').appendChild(app.view);
 
-            //
-
-            // Video sprite setup.
-
-            //const texture = PIXI.Texture.from(video, PIXI.SCALE_MODES.LINEAR, true, false);
-            // const sprite = new PIXI.Sprite(new PIXI.Texture());
-            // sprite.width = app.renderer.width;
-            // sprite.height = app.renderer.height;
-
-            // app.stage.addChild(sprite);
-
-            // console.log(sprite);
-
             // Shader setup.
 
             const fragmentShader = document.getElementById("fragment").innerHTML
@@ -150,7 +132,7 @@
             const renderTextureSprite = new PIXI.Sprite(renderTexture);
             app.stage.addChild(renderTextureSprite)
 
-            console.log(renderTextureSprite);
+            // Gradient texture setup.
 
             const gradientTexture = PIXI.Texture.from("sprites/gradient.png");
 
@@ -158,12 +140,10 @@
             renderTextureSprite.filters = [simpleShader]
 
 
-
             // Wait a frame before start updating, otherwise we still get the WebGL error
             app.ticker.add(() => {
 
                 simpleShader.uniforms.mouse = mousePosition;
-                //texture.update();
 
                 renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
                 app.renderer.render(sprites, renderTexture, true);
@@ -173,9 +153,6 @@
             //
 
             $(window).resize(function () {
-                renderTextureSprite.width = app.renderer.width;
-                renderTextureSprite.height = app.renderer.height;
-
                 renderTextureSprite.width = app.renderer.width;
                 renderTextureSprite.height = app.renderer.height;
 
