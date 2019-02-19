@@ -41,6 +41,11 @@
             right: 8px;
             width: 128px;
             z-index: 100;
+            pointer-events: none;
+        }
+
+        .btn-group-vertical {
+            pointer-events: initial;
         }
 
         .card {
@@ -79,7 +84,7 @@
     <div id="menu" class="container h-100">
 
         <div class="row h-100 justify-content-center align-items-center">
-            <div class="btn-group-vertical" role="group" aria-label="Basic example">
+            <div class="btn-group-vertical" role="group">
                 <a class="btn btn-light  btn-lg" disabled>DEMOS</a>
                 <a class="btn btn-dark btn-lg" href="/heatmap/" target="demo">Heat</a>
                 <a class="btn btn-dark btn-lg" href="/kissingbooth/" target="demo">Kiss</a>
