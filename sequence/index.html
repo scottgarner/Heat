@@ -30,12 +30,10 @@
             flex-grow: 1;
             flex-direction: column;
             justify-content: space-around;
-            background: white;
         }
 
         .activeColumn .row {
-            background: rgb(233, 201, 58);
-
+            background: #FBB040;
         }
 
         .row {
@@ -46,14 +44,18 @@
             justify-content: center;
 
             margin: 2px;
-            background: #ccc;
-            text-align: center;
 
             border-radius: 8px;
+
+        }
+
+        .inactiveRow {
+
+            background: rgba(255, 255, 255, .1);
         }
 
         .activeRow {
-            background: rgb(50, 134, 139);
+            background: #29b8e5;
         }
     </style>
 
@@ -88,6 +90,7 @@
 
                     let row = document.createElement('div');
                     row.classList.add('row');
+                    row.classList.add('inactiveRow');
                     column.appendChild(row);
 
                     row.addEventListener('click', function () {

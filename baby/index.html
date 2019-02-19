@@ -75,12 +75,15 @@
 
             //
 
-            for (let i = 0; i < 512; i++) {
-                points.push(new PIXI.Point(i * (512 / 512), 0));
-            };
-            rope = new PIXI.mesh.Rope(PIXI.Texture.from("sprites/baby.png"), points);
-            app.stage.addChild(rope);
+            let width = window.innerWidth;
+            let height = window.innerHeight;
 
+            for (let i = 0; i < 512; i++) {
+                let offset = i * (512 / 512)
+                points.push(new PIXI.Point((width / 2) + offset, height / 2));
+            };
+            rope = new PIXI.SimpleRope(PIXI.Texture.from("sprites/baby.png"), points);
+            app.stage.addChild(rope);
         })();
 
         var mySpriteSheetImage = PIXI.BaseTexture.from("sprites/food.png");

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.0/css/bootstrap.min.css"
+        integrity="sha384-PDle/QlgIONtM1aqA2Qemk5gPOE7wFq8+Em+G/hmo5Iq0CCmYZLv3fVRDJ4MMwEA" crossorigin="anonymous">
+
+    <style>
+        body,
+        html {
+            background: #2b3990;
+            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
+            height: 100%;
+        }
+
+        footer {
+            color: white;
+        }
+
+        .btn-link {
+            color: white;
+            opacity: .5;
+            text-transform: uppercase;
+            font-size: .8em;
+        }
+
+        .btn-link:hover {
+            color: white;
+            opacity: 1;
+            text-decoration: none;
+        }
+
+        #menu {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 8px;
+            width: 128px;
+            z-index: 100;
+        }
+
+        .card {
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #frameContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+
+        iframe {
+            height: 100%;
+            width: 100%;
+            border: none;
+        }
+    </style>
+
+    <title>Heat</title>
+
+</head>
+
+<body>
+
+    <div class="card text-white bg-dark">
+        <div class="card-body text-center">
+            <p class="card-text">Welcome to HEAT. Enable the extension, choose a demo on the right and click!</p>
+        </div>
+    </div>
+
+    <div id="menu" class="container h-100">
+
+        <div class="row h-100 justify-content-center align-items-center">
+            <div class="btn-group-vertical" role="group" aria-label="Basic example">
+                <a class="btn btn-light  btn-lg" disabled>DEMOS</a>
+                <a class="btn btn-dark btn-lg" href="/heatmap/" target="demo">Heat</a>
+                <a class="btn btn-dark btn-lg" href="/kissingbooth/" target="demo">Kiss</a>
+                <a class="btn btn-dark btn-lg" href="/sequence/" target="demo">Sequence</a>
+                <a class="btn btn-dark btn-lg" href="/baby/" target="demo">Baby</a>
+                <a class="btn btn-dark btn-lg" href="/warp/" target="demo">Warp</a>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <div id="frameContainer">
+        <iframe name="demo"></iframe>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.0/js/bootstrap.min.js"
+        integrity="sha384-7aThvCh9TypR7fIc2HV4O/nFMVCBwyIUKL8XCtKE+8xgCgl/PQGuFsvShjr74PBp"
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+        (function () {
+
+            heat.addEventListener('click', (e) => {
+
+
+                const x = parseInt(e.detail.x * window.innerWidth);
+                const y = parseInt(e.detail.y * window.innerHeight);
+
+                console.log(x, y);
+
+                var element = document.elementFromPoint(x, y);
+
+                console.log(element);
+
+                element.click();
+            });
+
+        })();
+
+    </script>
+
+</body>
+
+</html>

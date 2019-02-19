@@ -38,7 +38,7 @@
         varying vec2 vTextureCoord;
 
         uniform sampler2D uSampler;
-        uniform sampler2D gradient;
+        uniform sampler2D background;
 
         uniform vec2 mouse;
         uniform float time;        
@@ -46,12 +46,13 @@
         void main(void) {
 
             vec4 maskColor = texture2D(uSampler, vTextureCoord);
-            
-            vec2 uv;
-            uv.x = maskColor.r;
-            uv.y = vTextureCoord.y;
+            maskColor.rgb *= .2;
 
-            vec4 videoColor = texture2D(gradient, uv);
+            vec2 uv;
+            uv.x = vTextureCoord.x + maskColor.x;
+            uv.y = vTextureCoord.y + maskColor.y;
+
+            vec4 videoColor = texture2D(background, uv);
             gl_FragColor = videoColor;
 
         }
@@ -137,9 +138,9 @@
 
             // Gradient texture setup.
 
-            const gradientTexture = PIXI.Texture.from("sprites/gradient.png");
+            const backgroundTexture = PIXI.Texture.from("textures/background.jpg");
 
-            simpleShader.uniforms.gradient = gradientTexture;
+            simpleShader.uniforms.background = backgroundTexture;
             renderTextureSprite.filters = [simpleShader]
 
 
@@ -194,6 +195,7 @@
                 dude.x = screenX;
                 dude.y = screenY;
                 dude.alpha = .2;
+                dude.scale.set(0);
 
                 dude.birth = Date.now();
                 dude.death = dude.birth + 10 * 1000;
@@ -207,6 +209,8 @@
 
             app.ticker.add(function (delta) {
 
+
+
                 for (let i = sprites.children.length - 1; i >= 0; i--) {
                     let child = sprites.getChildAt(i);
 
@@ -215,8 +219,8 @@
                     if (age >= 1) {
                         child.destroy();
                     } else {
-                        let scale = (1 - age)
-                        child.scale.set(scale);
+                        let scale = ((Math.sin(child.x + child.y + clock / 25)) + 1) / 2.0;
+                        child.scale.set(scale * (1 - age) * 2.0);
                     }
 
 
