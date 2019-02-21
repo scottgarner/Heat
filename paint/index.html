@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <style>
+        #main {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            user-select: none;
+
+            background: url('textures/map.svg') no-repeat center center fixed;
+            background-size: cover;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinycolor/1.4.1/tinycolor.min.js"></script>
+
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+
+        (function () {
+
+            let app, sprites, scrim;
+            let ids = new Map();
+
+            // Listeners
+
+            document.addEventListener("click", function (event) {
+
+                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+                handleClick(normalizedX, normalizedY, -1);
+
+            });
+
+
+            window.addEventListener('resize', function () {
+                renderTextureSprite.width = app.renderer.width;
+                renderTextureSprite.height = app.renderer.height;
+
+                //
+
+                scrim.clear();
+                scrim.lineStyle(0);
+                scrim.beginFill(0x000000, 0.05);
+                scrim.drawRect(0, 0, app.renderer.width, app.renderer.height);
+                scrim.endFill();
+
+
+                //
+
+                renderTexture.resize(app.renderer.width, app.renderer.height, true);
+            });
+
+            heat.addEventListener('click', (e) => {
+                handleClick(e.detail.x, e.detail.y, e.detail.id);
+            });
+
+            function handleClick(x, y, id) {
+
+                if (!ids.has(id)) {
+                    let brush = new Brush(x, y);
+                    ids.set(id, brush);
+                    sprites.addChild(brush);
+                } else {
+                    let brush = ids.get(id);
+                    brush.update(x, y);
+                }
+
+            }
+
+            // Pixi.js
+
+            mainDiv = document.getElementById('main');
+
+            app = new PIXI.Application({
+                width: 300,
+                height: 300,
+                transparent: true,
+                resizeTo: mainDiv,
+                autoDensity: true,
+                resolution: devicePixelRatio,
+            });
+            document.getElementById('main').appendChild(app.view);
+
+            sprites = new PIXI.ParticleContainer(10000, {
+                scale: true,
+                position: true,
+                rotation: true,
+                uvs: true,
+                alpha: true
+            });
+            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+            //app.stage.addChild(sprites);
+
+            // Scrim
+
+            scrim = new PIXI.Graphics();
+
+            scrim.lineStyle(0);
+            scrim.beginFill(0x000000, 0.05);
+            scrim.drawRect(0, 0, app.renderer.width, app.renderer.height);
+            scrim.endFill();
+
+            //
+
+            const renderTexture = PIXI.RenderTexture.create(app.renderer.width, app.renderer.height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
+            const renderTextureSprite = new PIXI.Sprite(renderTexture);
+            app.stage.addChild(renderTextureSprite)
+
+
+            // Render
+
+            app.ticker.add(function (delta) {
+
+                ids.forEach(function (brush) {
+                    brush.draw(delta);
+                });
+
+                app.renderer.render(scrim, renderTexture, false);
+                app.renderer.render(sprites, renderTexture, false);
+            });
+
+            // Brush
+
+            class Brush extends PIXI.Sprite {
+
+                constructor(x, y) {
+
+                    super(new PIXI.Texture.from('sprites/particle.png'));
+
+                    this.x = parseInt(x * mainDiv.clientWidth);
+                    this.y = parseInt(y * mainDiv.clientHeight);
+                    this.anchor.set(0.5);
+
+                    this.tint = "0x" + tinycolor({ h: Math.random() * 360, s: 1, l: .5 }).toHex();
+
+                    this.target = new PIXI.Point(this.x, this.y);
+                    this.seed = Math.random() * 100;
+
+                    this.clock = 0;
+
+                }
+
+                update(x, y) {
+                    this.target.x = parseInt(x * mainDiv.clientWidth);
+                    this.target.y = parseInt(y * mainDiv.clientHeight);
+                }
+
+                draw(delta) {
+
+                    let scale = ((Math.sin(this.seed + this.clock / 25)) + 1);
+                    this.scale.set(scale);
+
+                    //
+
+                    let offset = new PIXI.Point(
+                        (this.target.x - this.x),
+                        (this.target.y - this.y)
+                    );
+
+                    let length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+                    if (length == 0) return;
+
+                    // Normalize
+
+                    offset.x /= length;
+                    offset.y /= length;
+
+                    if (length > 100) length = 100;
+
+                    // Scale offset.
+
+                    offset.x *= .05 * delta * length;
+                    offset.y *= .05 * delta * length;
+
+                    this.x += offset.x;
+                    this.y += offset.y;
+
+                    //
+
+                    this.clock += delta;
+
+                }
+
+            }
+
+        })();
+
+
+
+    </script>
+
+</body>
+
+</html>
