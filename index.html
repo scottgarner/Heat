@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="row justify-content-center align-items-center text-center">
-                    <div class="btn-group" role="group" aria-label="Basic example">
+                    <div id="demos" class="btn-group" role="group" aria-label="Basic example">
                         <a class="btn btn-outline-light" href="/heatmap/">Heat</a>
                         <!-- <a class="btn btn-outline-light" href="/orbs/">Orbs</a> -->
                         <a class="btn btn-outline-light" href="/kissingbooth/">Kiss</a>
@@ -83,6 +83,22 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.0/js/bootstrap.min.js"
         integrity="sha384-7aThvCh9TypR7fIc2HV4O/nFMVCBwyIUKL8XCtKE+8xgCgl/PQGuFsvShjr74PBp"
         crossorigin="anonymous"></script>
+
+    <script>
+        (function () {
+
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") || params.get("channelID") || 97032862;
+
+            console.log(channel);
+
+            $("#demos").children().each(function (index, element) {
+                $(element).attr('href', $(element).attr('href') + "?channel=" + channel);
+            });
+
+        })();
+
+    </script>
 
 </body>
 
