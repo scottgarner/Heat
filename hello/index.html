@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Heat Hello World</title>
+</head>
+
+<body>
+
+    <!--First, make sure socket.io is available to your project.-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+    <script>
+
+        // Next, create a socket.io connection to heat-ebs.j38.net.
+        const socket = io('wss://heat-ebs.j38.net/');
+
+        // Once connected, join a Twitch channel with your numeric channel id.
+        socket.on('connect', () => {
+            socket.emit("channel", 97032862);
+        });
+
+        // Now, listen for click events.
+        socket.on('click', (data) => {
+            const clickData = JSON.parse(data);
+
+            // Finally, use the click coordinates to create your experience.
+            console.log(clickData);
+        });
+
+        {
+            id: "U97032862",    // Opaque User ID for viewer.
+                x: "0.354",         // Normalized X coordinate.
+                    y: "0.736"          // Normalized Y coordinate.
+        }
+
+    </script>
+
+</body>
+
+</html>
