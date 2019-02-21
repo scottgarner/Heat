@@ -39,6 +39,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 
+    <script src="/js/heat.js"></script>
+
     <script id="fragment" type="shader">
 
         precision mediump float;
@@ -72,29 +74,6 @@
 
         (function () {
 
-            const params = (new URL(document.location)).searchParams;
-            const channel = params.get("channel") || 97032862;
-
-            console.log("Heat for channel: " + channel);
-
-            //
-
-            const socket = io("wss://heat-ebs.j38.net/");
-
-            socket.on('connect', function () {
-                console.log("CONNECTED");
-                socket.emit("channel", channel);
-            });
-
-            socket.on('click', function (data) {
-                const clickData = JSON.parse(data);
-                drawClick(clickData.x, clickData.y);
-            });
-
-            socket.on('clear', function (data) {
-                clearSprites();
-            });
-
             //
 
             let mousePosition = { x: 0, y: 0 };
@@ -111,6 +90,10 @@
                     x: event.clientX / $(document).width(),
                     y: event.clientY / $(document).height()
                 }
+            });
+
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y);
             });
 
             // Pixi.js
