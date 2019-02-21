@@ -103,6 +103,10 @@
 
                     row.addEventListener('click', function () {
 
+                        if (Tone.context.state !== 'running') {
+                            Tone.context.resume();
+                        }
+
                         row.classList.toggle('activeRow');
 
                     })
