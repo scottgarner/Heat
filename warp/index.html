@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Heat Map</title>
+    <title>Warp</title>
     <meta charset="UTF-8">
 
     <style>
@@ -13,9 +13,10 @@
             right: 0;
             bottom: 0;
             user-select: none;
+        }
 
-            background: url('textures/map.svg') no-repeat center center fixed;
-            background-size: cover;
+        #webcam {
+            display: none;
         }
     </style>
 
@@ -23,11 +24,9 @@
 
 <body>
 
-
-    <video id="webcam" autoplay></video>
     <div id="main"></div>
+    <video id="webcam" autoplay></video>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 
@@ -42,7 +41,6 @@
         uniform sampler2D uSampler;
         uniform sampler2D background;
 
-        uniform vec2 mouse;
         uniform float time;        
 
         void main(void) {
@@ -63,33 +61,80 @@
 
     <script>
 
-        let app, sprites;
-
         (function () {
 
-            let mousePosition = { x: 0, y: 0 };
+            let app, sprites;
 
-            $(document).click(function (event) {
-                const normalizedX = (event.clientX * 1.0 / $(document).width()).toPrecision(3);
-                const normalizedY = (event.clientY * 1.0 / $(document).height()).toPrecision(3);
+            // Event listeners.
+
+            document.addEventListener("click", function (event) {
+
+                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
 
                 drawClick(normalizedX, normalizedY);
-            });
 
-            $(document).mousemove(function (event) {
-                mousePosition = {
-                    x: event.clientX / $(document).width(),
-                    y: event.clientY / $(document).height()
-                }
             });
 
             heat.addEventListener('click', (e) => {
                 drawClick(e.detail.x, e.detail.y);
             });
 
-            // Pixi.js
+            window.addEventListener('resize', function () {
+                renderTextureSprite.width = app.renderer.width;
+                renderTextureSprite.height = app.renderer.height;
+
+                renderTexture.resize(app.renderer.width, app.renderer.height, true);
+            });
+
+            // DOM Elements.
 
             mainDiv = document.getElementById('main');
+
+            // WebRTC
+
+            const params = (new URL(document.location)).searchParams;
+            const video = params.get("video") || false;
+
+            console.log(video);
+
+            if (video != 0) {
+
+                const constraints = window.constraints = {
+                    audio: false,
+                    video: { width: 1280, height: 720 }
+                };
+
+                (async () => {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                        const video = document.querySelector('video');
+                        console.log(video);
+
+                        const videoTracks = stream.getVideoTracks();
+                        console.log('Got stream with constraints:', constraints);
+                        console.log(`Using video device: ${videoTracks[0].label}`);
+                        window.stream = stream; // make variable available to browser console
+                        video.srcObject = stream;
+
+                        video.addEventListener("canplay", () => {
+                            console.log("Video ready.");
+                            backgroundTexture = PIXI.Texture.from(video, PIXI.SCALE_MODES.LINEAR, true, false);
+                            simpleShader.uniforms.background = backgroundTexture;
+                            app.ticker.add(() => {
+                                backgroundTexture.update();
+                            });
+                        });
+
+                        video.play();
+
+                    } catch (e) {
+                        console.log("FAIL");
+                    }
+                })();
+
+            }
 
             // Pixi setup.
 
@@ -101,12 +146,7 @@
                 autoDensity: true,
                 resolution: devicePixelRatio,
             });
-            document.getElementById('main').appendChild(app.view);
-
-            // Shader setup.
-
-            const fragmentShader = document.getElementById("fragment").innerHTML
-            const simpleShader = new PIXI.Filter(null, fragmentShader);
+            mainDiv.appendChild(app.view);
 
             // Render texture setup.
 
@@ -119,31 +159,15 @@
 
             // Gradient texture setup.
 
-            const backgroundTexture = PIXI.Texture.from("textures/background.jpg");
+            let backgroundTexture = PIXI.Texture.from("textures/background.jpg");
+
+            // Shader setup.
+
+            const fragmentShader = document.getElementById("fragment").innerHTML
+            const simpleShader = new PIXI.Filter(null, fragmentShader);
 
             simpleShader.uniforms.background = backgroundTexture;
             renderTextureSprite.filters = [simpleShader]
-
-
-            // Wait a frame before start updating, otherwise we still get the WebGL error
-            app.ticker.add(() => {
-
-                simpleShader.uniforms.mouse = mousePosition;
-
-                renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
-                app.renderer.render(sprites, renderTexture, true);
-
-            });
-
-            //
-
-            $(window).resize(function () {
-                renderTextureSprite.width = app.renderer.width;
-                renderTextureSprite.height = app.renderer.height;
-
-                renderTexture.resize(app.renderer.width, app.renderer.height, true);
-            });
-
 
             // Particle container.
 
@@ -155,16 +179,7 @@
             });
             sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
 
-            //
-
-            function clearSprites() {
-
-                for (let i = sprites.children.length - 1; i >= 0; i--) {
-                    let child = sprites.getChildAt(i);
-                    child.destroy();
-                }
-
-            }
+            // Draw clicks.
 
             function drawClick(clickX, clickY) {
 
@@ -190,7 +205,7 @@
 
             app.ticker.add(function (delta) {
 
-
+                // Update sprites.
 
                 for (let i = sprites.children.length - 1; i >= 0; i--) {
                     let child = sprites.getChildAt(i);
@@ -204,8 +219,12 @@
                         child.scale.set(scale * (1 - age) * 2.0);
                     }
 
-
                 };
+
+                // Draw to texture.
+
+                renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
+                app.renderer.render(sprites, renderTexture, true);
 
                 clock += delta;
             });
