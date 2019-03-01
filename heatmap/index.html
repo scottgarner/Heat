@@ -28,8 +28,8 @@
             bottom: 0;
             user-select: none;
 
-            background: url('textures/map.svg') no-repeat center center fixed;
-            background-size: cover;
+            /* background: url('textures/map.svg') no-repeat center center fixed;
+            background-size: cover; */
         }
     </style>
 
@@ -182,7 +182,7 @@
                     if (age >= 1) {
                         child.destroy();
                     } else {
-                        let scale = (1 - age)
+                        let scale = (1 - age) * 2;
                         child.scale.set(scale);
                     }
 

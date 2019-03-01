@@ -25,6 +25,64 @@
 
 <body>
 
+
+    <script id="fragment" type="shader">
+
+        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+
+        float snoise(vec2 v){
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                     -0.577350269189626, 0.024390243902439);
+            vec2 i  = floor(v + dot(v, C.yy) );
+            vec2 x0 = v -   i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod(i, 289.0);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+            + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
+              dot(x12.zw,x12.zw)), 0.0);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+          }
+        //
+
+        precision highp float;
+
+        varying vec2 vTextureCoord;
+        uniform sampler2D uSampler;
+        uniform float time;
+
+        void main(void) {
+
+            vec2 uvs = vTextureCoord;
+
+            float noise = snoise(vec2( uvs.x + (time * .01) , uvs.y + (time * .01) ));
+
+            uvs.x += (noise * .01);
+            uvs.y += (noise * .01);
+
+            vec4 color = texture2D(uSampler, uvs);
+            //vec4 background = vec4(0,.15,.2,1);
+            //color = mix(color, background, .05);
+            gl_FragColor = color;
+
+        }
+    
+    </script>
+
+
     <div id="main"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -39,7 +97,7 @@
 
         (function () {
 
-            let app, sprites, scrim;
+            let app, sprites;
             let ids = new Map();
 
             // Listeners
@@ -57,17 +115,6 @@
             window.addEventListener('resize', function () {
                 renderTextureSprite.width = app.renderer.width;
                 renderTextureSprite.height = app.renderer.height;
-
-                //
-
-                scrim.clear();
-                scrim.lineStyle(0);
-                scrim.beginFill(0x000000, 0.05);
-                scrim.drawRect(0, 0, app.renderer.width, app.renderer.height);
-                scrim.endFill();
-
-
-                //
 
                 renderTexture.resize(app.renderer.width, app.renderer.height, true);
             });
@@ -108,37 +155,44 @@
                 position: true,
                 rotation: true,
                 uvs: true,
-                alpha: true
             });
-            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
-            //app.stage.addChild(sprites);
-
-            // Scrim
-
-            scrim = new PIXI.Graphics();
-
-            scrim.lineStyle(0);
-            scrim.beginFill(0x000000, 0.05);
-            scrim.drawRect(0, 0, app.renderer.width, app.renderer.height);
-            scrim.endFill();
+            //sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+            app.stage.addChild(sprites);
 
             //
 
             const renderTexture = PIXI.RenderTexture.create(app.renderer.width, app.renderer.height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
             const renderTextureSprite = new PIXI.Sprite(renderTexture);
-            app.stage.addChild(renderTextureSprite)
+            //renderTextureSprite.blendMode = PIXI.BLEND_MODES.SCREEN;
 
+            app.stage.addChild(renderTextureSprite);
+
+            // Shader setup.
+
+            const fragmentShader = document.getElementById("fragment").innerHTML
+            const simpleShader = new PIXI.Filter(null, fragmentShader);
+
+            renderTextureSprite.filters = [simpleShader]
 
             // Render
 
+            let clock = 0;
+
             app.ticker.add(function (delta) {
 
-                ids.forEach(function (brush) {
+                simpleShader.uniforms.time = clock;
+
+                ids.forEach(function (brush, id) {
                     brush.draw(delta);
+                    if (Date.now() - brush.lastUpdate > 10 * 1000) {
+                        brush.destroy();
+                        ids.delete(id);
+                    }
                 });
 
-                app.renderer.render(scrim, renderTexture, false);
-                app.renderer.render(sprites, renderTexture, false);
+                app.renderer.render(app.stage, renderTexture, false);
+
+                clock += delta;
             });
 
             // Brush
@@ -153,24 +207,31 @@
                     this.y = parseInt(y * mainDiv.clientHeight);
                     this.anchor.set(0.5);
 
-                    this.tint = "0x" + tinycolor({ h: Math.random() * 360, s: 1, l: .5 }).toHex();
+                    this.tint = "0x" + tinycolor({ h: Math.random() * 360, s: 1, l: .75 }).toHex();
 
                     this.target = new PIXI.Point(this.x, this.y);
                     this.seed = Math.random() * 100;
+
+                    this.lastUpdate = Date.now();
 
                     this.clock = 0;
 
                 }
 
                 update(x, y) {
+
+                    this.lastUpdate = Date.now();
+
                     this.target.x = parseInt(x * mainDiv.clientWidth);
                     this.target.y = parseInt(y * mainDiv.clientHeight);
                 }
 
                 draw(delta) {
 
-                    let scale = ((Math.sin(this.seed + this.clock / 25)) + 1);
+                    let scale = ((Math.sin(this.seed + this.clock / 25)) + 2);
                     this.scale.set(scale);
+
+                    this.rotation = Math.sin(this.clock) * 2 * Math.PI;
 
                     //
 
@@ -180,25 +241,27 @@
                     );
 
                     let length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
-                    if (length == 0) return;
 
-                    // Normalize
+                    if (length > 0) {
 
-                    offset.x /= length;
-                    offset.y /= length;
+                        // Normalize
 
-                    if (length > 100) length = 100;
+                        offset.x /= length;
+                        offset.y /= length;
 
-                    // Scale offset.
+                        if (length > 100) length = 100;
 
-                    offset.x *= .05 * delta * length;
-                    offset.y *= .05 * delta * length;
+                        // Scale offset.
 
-                    this.x += offset.x;
-                    this.y += offset.y;
+                        offset.x *= .1 * delta * length;
+                        offset.y *= .1 * delta * length;
+
+                        this.x += offset.x;
+                        this.y += offset.y;
+
+                    }
 
                     //
-
                     this.clock += delta;
 
                 }
