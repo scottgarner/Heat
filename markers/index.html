@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Markers</title>
+
+    <style>
+        body,
+        html {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2b3990;
+            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
+            overflow: hidden;
+        }
+
+        .marker {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-image: url('sprites/marker.svg');
+            background-size: 100% 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+        (function () {
+
+            // Listeners
+
+            document.addEventListener("click", function (event) {
+
+                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+                handleClick(normalizedX, normalizedY, -1);
+
+            });
+
+            heat.addEventListener('click', (e) => {
+                handleClick(e.detail.x, e.detail.y, e.detail.id);
+            });
+
+            //
+
+            function handleClick(x, y, id) {
+
+                if (markers.has(id)) {
+                    markers.get(id).update(x, y);
+                } else {
+                    let marker = new Marker(x, y);
+                    markers.set(id, marker);
+                }
+            }
+
+            //
+
+            let markers = new Map();
+
+            class Marker {
+                constructor(x, y) {
+
+                    this.element = document.createElement("div");
+                    this.element.classList.add("marker");
+                    document.body.appendChild(this.element);
+
+                    this.update(x, y);
+
+                }
+
+                update(x, y) {
+                    this.element.style.left = (x * window.innerWidth) - 16 + "px";
+                    this.element.style.top = (y * window.innerHeight) - 32 + "px";
+                }
+            }
+
+        })();
+
+    </script>
+
+</body>
+
+</html>
