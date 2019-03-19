@@ -14,6 +14,12 @@ class Heat extends EventTarget {
 
         //
 
+        if (!window.obsstudio) {
+            document.body.classList.add("demo");
+        }
+
+        //
+
         socket.on('connect', () => {
             console.log("Heat connected.");
             socket.emit("channel", channel);
