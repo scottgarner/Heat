@@ -31,6 +31,76 @@
             console.log(clickData);
         });
 
+        //
+        // Raw Websockets.
+        //
+
+        function connect() {
+            let ws = new WebSocket('wss://heat-ebs.j38.net/');
+
+            ws.addEventListener('open', function open() {
+                console.log("WS OPEN");
+                ws.send(JSON.stringify({ channel: 97032862 }));
+            });
+
+            ws.addEventListener('message', function incoming(message) {
+                let jsonData = JSON.parse(message.data);
+                if (jsonData.type == "click") {
+                    console.log(jsonData);
+                    getUser(jsonData.id);
+                }
+            });
+
+            ws.addEventListener('error', function (e) {
+                console.log("ERROR");
+                console.log(e);
+            });
+
+            ws.addEventListener('close', function (e) {
+                console.log("CLOSE");
+                console.log(e);
+                ws = null
+                setTimeout(connect, 1000)
+            });
+        }
+
+        connect();
+
+
+        //
+
+        function getUser(id) {
+
+            if (id.startsWith("A") || id.startsWith("U")) {
+                console.log("Bad user.");
+                return false;
+            }
+
+            const url = `https://api.twitch.tv/kraken/users/${id}`;
+
+            const httpRequest = new XMLHttpRequest();
+            httpRequest.open("GET", url, true);
+
+            httpRequest.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
+            httpRequest.setRequestHeader('Client-ID', 'cr20njfkgll4okyrhag7xxph270sqk');
+
+            httpRequest.onload = function (e) {
+                if (httpRequest.readyState === 4) {
+                    if (httpRequest.status === 200) {
+                        let responseData = JSON.parse(httpRequest.responseText);
+                        console.log(responseData.display_name);
+                    } else {
+                        console.log(httpRequest.responseText);
+                        console.log(httpRequest.status);
+                        console.log(httpRequest.statusText);
+                    }
+                }
+            };
+
+            httpRequest.send();
+
+        }
+
     </script>
 
 </body>
