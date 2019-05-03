@@ -31,9 +31,11 @@
             right: 0;
             bottom: 0;
             user-select: none;
+        }
 
-            /* background: url('textures/background.svg') no-repeat center bottom fixed;
-            background-size: cover; */
+        #main.demo {
+            background: url('textures/background.svg') no-repeat center bottom fixed;
+            background-size: cover;
         }
     </style>
 </head>
@@ -53,6 +55,16 @@
 
             let app;
             let sprites;
+
+            // Demo background
+
+            const params = (new URL(document.location)).searchParams;
+            const demo = params.get("demo") || false;
+
+            if (demo) {
+
+                document.getElementById("main").classList.add('demo');
+            }
 
             // Event handlers.
 
