@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Face</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #webcam {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        #drawCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+
+        .candy {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 100px;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background: blue;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video id="webcam" width="1280" height="720" autoplay loop></video>
+    <canvas id="drawCanvas" width="1280" height="720"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+    <script src="js/clmtrackr.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+
+        (function () {
+
+            // Listeners
+
+            document.addEventListener("click", function (event) {
+
+                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+                handleClick(normalizedX, normalizedY, -1);
+
+            });
+
+            heat.addEventListener('click', (e) => {
+                handleClick(e.detail.x, e.detail.y, e.detail.id);
+            });
+
+            function handleClick(x, y, id) {
+                let candy = new Candy(x, y);
+                candies.add(candy);
+            }
+
+            //
+
+            var ctracker = new clm.tracker();
+            ctracker.init();
+
+            // WebRTC
+
+            const params = (new URL(document.location)).searchParams;
+            const video = params.get("video") || false;
+
+            //
+
+            console.log(video);
+
+            if (video != 0) {
+
+                const constraints = window.constraints = {
+                    audio: false,
+                    video: { width: 1280, height: 720 }
+                };
+
+                (async () => {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                        const video = document.querySelector('video');
+
+                        const videoTracks = stream.getVideoTracks();
+                        console.log('Got stream with constraints:', constraints);
+                        console.log(`Using video device: ${videoTracks[0].label}`);
+                        window.stream = stream; // make variable available to browser console
+                        video.srcObject = stream;
+
+                        video.addEventListener("canplay", () => {
+                            console.log(video);
+
+                            ctracker.start(video);
+
+                            var canvasInput = document.getElementById('drawCanvas');
+                            var cc = canvasInput.getContext('2d');
+
+
+                            function drawLoop(timestamp) {
+                                cc.clearRect(0, 0, canvasInput.width, canvasInput.height);
+                                if (ctracker.getCurrentPosition()) {
+                                    ctracker.draw(canvasInput);
+                                }
+
+                                //
+
+                                var positions = ctracker.getCurrentPosition();
+
+                                if (positions.length) {
+                                    let mouthPosition = positions[60];
+
+                                    for (let candy of candies) {
+
+                                        candy.update(
+                                            mouthPosition[0] * 1.0 / window.innerWidth,
+                                            mouthPosition[1] * 1.0 / window.innerHeight
+                                        );
+
+                                        candy.draw(timestamp);
+
+                                        if (candy.length < .05) {
+                                            candies.delete(candy);
+                                            candy.destroy();
+                                        }
+
+                                    }
+
+                                }
+
+                                requestAnimationFrame(drawLoop);
+                            }
+                            requestAnimationFrame(drawLoop);
+
+                        });
+
+                        video.play();
+
+                    } catch (e) {
+                        console.log("FAIL");
+                    }
+                })();
+
+
+            }
+
+            //
+
+            let candies = new Set();
+
+            class Candy {
+                constructor(x, y) {
+
+                    this.element = document.createElement("div");
+                    this.element.classList.add("candy");
+                    document.body.appendChild(this.element);
+
+                    this.element.style.left = (x * window.innerWidth) + "px";
+                    this.element.style.top = (y * window.innerHeight) + "px";
+
+                    this.x = parseFloat(x);
+                    this.y = parseFloat(y);
+
+                    this.target = { x: x, y: y };
+                    this.lastTimeStamp = 0;
+                }
+
+                update(x, y) {
+
+                    this.target.x = x
+                    this.target.y = y
+                }
+
+                destroy() {
+                    this.element.remove();
+                }
+
+                draw(timeStamp) {
+
+                    let delta = (timeStamp - this.lastTimeStamp) / 1000;
+
+                    let offset = {
+                        x: this.target.x - this.x,
+                        y: this.target.y - this.y
+                    }
+
+                    this.length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+
+                    // Normalize offset.
+
+                    offset.x /= this.length;
+                    offset.y /= this.length;
+
+                    // Scale offset.
+
+                    offset.x *= .1 * this.length;
+                    offset.y *= .1 * this.length;
+
+                    //
+
+                    this.x = (this.x + offset.x);
+                    this.y = (this.y + offset.y);
+
+                    this.element.style.left = (this.x * window.innerWidth) + "px";
+                    this.element.style.top = (this.y * window.innerHeight) + "px";
+
+                    //
+
+                    this.lastTimeStamp = timeStamp;
+                };
+
+            }
+
+        })();
+
+    </script>
+
+</body>
+
+</html>

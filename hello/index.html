@@ -49,6 +49,10 @@
                     console.log(jsonData);
                     getUser(jsonData.id);
                 }
+                if (jsonData.type == "grid") {
+                    console.log(jsonData);
+                    getUser(jsonData.id);
+                }
             });
 
             ws.addEventListener('error', function (e) {
