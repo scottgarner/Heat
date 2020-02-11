@@ -5,6 +5,7 @@ class Heat extends EventTarget {
 
         const params = (new URL(document.location)).searchParams;
         const channel = params.get("channel") || params.get("channelID") || 97032862;
+        const clear = params.get("clear") || 0;
 
         const url = 'wss://heat-ebs.j38.net/';
         //const url = 'ws://localhost:3000/';
@@ -14,7 +15,7 @@ class Heat extends EventTarget {
 
         //
 
-        if (!window.obsstudio) {
+        if (!window.obsstudio && !clear) {
             document.body.classList.add("demo");
         }
 
