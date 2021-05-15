@@ -1,41 +1,91 @@
 class Heat extends EventTarget {
+    channelId;
+    users;
 
-    constructor() {
+    constructor(channelId) {
         super();
 
-        const params = (new URL(document.location)).searchParams;
-        const channel = params.get("channel") || params.get("channelID") || 97032862;
-        const clear = params.get("clear") || 0;
-
-        const url = 'wss://heat-ebs.j38.net/';
-        //const url = 'ws://localhost:3000/';
-        const socket = io(url, { transports: ['websocket'] });
-
-        console.log("Running Heat for channel: " + channel + " " + url);
-
-        //
-
-        if (!window.obsstudio && !clear) {
-            document.body.classList.add("demo");
+        if (!channelId) {
+            this.log("Invalid channel ID.");
+            return;
         }
 
-        //
+        this.channelId = channelId
+        this.connect();
 
-        socket.on('connect', () => {
-            console.log("Heat connected.");
-            socket.emit("channel", channel);
-        });
-
-        socket.on('click', (data) => {
-            const clickData = JSON.parse(data);
-            let event = new CustomEvent("click", { detail: clickData });
-            this.dispatchEvent(event);
-        });
-
+        this.users = new Map();
     }
 
+    connect() {
+        let url = `wss://heat-api.j38.net/channel/${this.channelId}`;
+        //let url = `wss://heat-api.j38.workers.dev/channel/${this.channelId}`;
+        this.log(`Connecting to ${url}.`);
+        let ws = new WebSocket(url);
+
+        // Initial connection.
+        ws.addEventListener('open', () => {
+            this.log(`Connection open to Heat API server, channel ${this.channelId}.`);
+        });
+
+        // Message received.
+        ws.addEventListener('message', (message) => {
+            let data = JSON.parse(message.data);
+            let event = new CustomEvent(data.type, { detail: data });
+            this.dispatchEvent(event);
+
+            if (data.type == "system") {
+                this.log("System message: " + data.message);
+            }
+        });
+
+        // Error handling.
+        ws.addEventListener('error', (event) => {
+            this.log("Error:");
+            console.log(event);
+        });
+
+        // Handle close and reconnect.
+        ws.addEventListener('close', (event) => {
+            this.log("Connection closed:");
+            console.log(event);
+            ws = null
+            setTimeout(() => { this.connect(); }, 1000)
+        });
+    }
+
+    async getUserById(id) {
+        // Check user map first.
+        if (this.users.has(id)) return this.users.get(id);
+
+        // Ignore invalid names.
+        if (id.startsWith("A")) return { display_name: "Anonymous" };
+        if (id.startsWith("U")) return { display_name: "Unverified" };
+
+        // Query Twitch for user details.
+        const url = `https://api.twitch.tv/kraken/users/${id}`;
+        const headers = {
+            'Accept': 'application/vnd.twitchtv.v5+json',
+            'Client-ID': 'cr20njfkgll4okyrhag7xxph270sqk'
+        };
+
+        // Handle response.
+        let response = await fetch(url, { headers });
+        if (response.ok) {
+            let data = await response.json();
+            this.users.set(id, data);
+            this.log("User for id " + id + " found: " + data.display_name);
+            return data;
+        } else {
+            return { display_name: "Unknown" };
+        }
+    }
+
+    log(message) {
+        let prefix = "%c::HEAT::%c"
+        console.log(prefix + " " + message, "color: white; background:orange;", "color:initial;background:initial;");
+    }
 }
 
-(function () {
-    window.heat = new Heat();
-})();
+(function (window) {
+    window.Heat = Heat;
+})(window);
