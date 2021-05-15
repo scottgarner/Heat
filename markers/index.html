@@ -1,30 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Markers</title>
 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
     <style>
-        body,
-        html {
-            height: 100%;
-        }
-
-        body {
-            background-color: rgba(0, 0, 0, 0);
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-        }
-
-        body.demo {
-            background: #2b3990;
-            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
-        }
-
         .marker {
             position: absolute;
             width: 32px;
@@ -40,62 +23,64 @@
 
 <body>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="/js/demo.js"></script>
     <script src="/js/heat.js"></script>
 
     <script>
+        "use strict";
 
-        (function () {
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-            // Listeners
-
-            document.addEventListener("click", function (event) {
-
-                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
-                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
-
-                handleClick(normalizedX, normalizedY, -1);
-
-            });
-
+            const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
-                handleClick(e.detail.x, e.detail.y, e.detail.id);
+                drawClick(e.detail.x, e.detail.y, e.detail.id);
             });
+        }
 
-            //
+        // Marker container.
+        let markers = new Map();
 
-            function handleClick(x, y, id) {
+        // Create/update markers.
+        function drawClick(x, y, id) {
+            if (markers.has(id)) {
+                markers.get(id).update(x, y);
+            } else {
+                let marker = new Marker(x, y);
+                markers.set(id, marker);
+            }
+        }
 
-                if (markers.has(id)) {
-                    markers.get(id).update(x, y);
-                } else {
-                    let marker = new Marker(x, y);
-                    markers.set(id, marker);
-                }
+        // Local clicks.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY, -1);
+        });
+
+    </script>
+
+    <script>
+        // Marker class.
+        class Marker {
+            constructor(x, y) {
+                this.element = document.createElement("div");
+                this.element.classList.add("marker");
+                document.body.appendChild(this.element);
+                this.update(x, y);
             }
 
-            //
-
-            let markers = new Map();
-
-            class Marker {
-                constructor(x, y) {
-
-                    this.element = document.createElement("div");
-                    this.element.classList.add("marker");
-                    document.body.appendChild(this.element);
-
-                    this.update(x, y);
-
-                }
-
-                update(x, y) {
-                    this.element.style.left = (x * window.innerWidth) - 16 + "px";
-                    this.element.style.top = (y * window.innerHeight) - 32 + "px";
-                }
+            update(x, y) {
+                this.element.style.left = (x * window.innerWidth) - 16 + "px";
+                this.element.style.top = (y * window.innerHeight) - 32 + "px";
             }
-
-        })();
+        }
 
     </script>
 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello World</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    Check the debug console.
+
+    <script src="/js/heat.js"></script>
+    <script>
+
+        // Determine channel from URL or fall back to ScottMadeThis.
+        const params = (new URL(document.location)).searchParams;
+        const channel = params.get("channel") ||
+            params.get("channelId") ||
+            params.get("channelID") ||
+            97032862;
+
+        // Initialize Heat.
+        const heat = new Heat(channel);
+
+        // Listen for clicks.
+        heat.addEventListener('click', async (e) => {
+
+            // Log click details
+            console.log(e.detail);
+
+            // Request and log user details.
+            let user = await heat.getUserById(e.detail.id);
+            console.log(user);
+
+        });
+    </script>
+
+</body>
+
+</html>

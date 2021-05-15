@@ -1,39 +1,29 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 
 <head>
     <title>Pixel</title>
-    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
 
     <style>
-        #main {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            user-select: none;
-        }
-
         #webcam {
             display: none;
         }
     </style>
-
 </head>
 
 <body>
-
     <div id="main"></div>
     <video id="webcam" autoplay></video>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
 
+    <script src="/js/demo.js"></script>
     <script src="/js/heat.js"></script>
 
     <script id="fragment" type="shader">
-
         precision mediump float;
 
         varying vec2 vTextureCoord;
@@ -59,180 +49,161 @@
             gl_FragColor = backgroundColor;
 
         }
-    
     </script>
 
     <script>
+        "use strict";
 
-        (function () {
+        // Get query parameters.
+        const params = (new URL(document.location)).searchParams;
 
-            let app, sprites;
+        // Initialize Heat.
+        {
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-            // Event listeners.
-
-            document.addEventListener("click", function (event) {
-
-                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
-                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
-
-                drawClick(normalizedX, normalizedY);
-
-            });
-
+            const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
                 drawClick(e.detail.x, e.detail.y);
             });
+        }
 
-            window.addEventListener('resize', function () {
-                renderTextureSprite.width = app.renderer.width;
-                renderTextureSprite.height = app.renderer.height;
+        // Main container.
+        let main = document.getElementById('main');
 
-                renderTexture.resize(app.renderer.width, app.renderer.height, true);
-            });
+        // Pixi setup.
+        let app = new PIXI.Application({
+            width: 300,
+            height: 300,
+            transparent: true,
+            resizeTo: main,
+            autoDensity: true,
+            resolution: devicePixelRatio,
+        });
+        main.appendChild(app.view);
 
-            // DOM Elements.
+        // Render texture setup.
+        let width = app.renderer.width;
+        let height = app.renderer.height;
 
-            mainDiv = document.getElementById('main');
+        const renderTexture = PIXI.RenderTexture.create(width, height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
+        const renderTextureSprite = new PIXI.Sprite(renderTexture);
+        app.stage.addChild(renderTextureSprite)
 
-            // WebRTC
+        // Background texture.
+        let backgroundTexture = PIXI.Texture.from("textures/background.jpg");
 
-            const params = (new URL(document.location)).searchParams;
-            const video = params.get("video") || false;
+        // Shader setup.
+        const fragmentShader = document.getElementById("fragment").innerHTML
+        const simpleShader = new PIXI.Filter(null, fragmentShader);
+        simpleShader.uniforms.background = backgroundTexture;
+        renderTextureSprite.filters = [simpleShader];
 
-            console.log(video);
+        // Particle container.
+        let sprites = new PIXI.ParticleContainer(10000, {
+            scale: true,
+            position: true,
+            rotation: true,
+            uvs: true
+        });
+        sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
 
-            if (video != 0) {
+        // Draw clicks.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+            const particle = PIXI.Sprite.from('sprites/particle.png');
 
-                const constraints = window.constraints = {
-                    audio: false,
-                    video: { width: 1280, height: 720 }
-                };
+            particle.anchor.set(0.5);
+            particle.x = screenX;
+            particle.y = screenY;
 
-                (async () => {
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            particle.birth = Date.now();
+            particle.death = particle.birth + (10 * 1000);
 
-                        const video = document.querySelector('video');
-                        console.log(video);
+            sprites.addChild(particle);
+        }
 
-                        const videoTracks = stream.getVideoTracks();
-                        console.log('Got stream with constraints:', constraints);
-                        console.log(`Using video device: ${videoTracks[0].label}`);
-                        window.stream = stream; // make variable available to browser console
-                        video.srcObject = stream;
+        // Render loop.
+        app.ticker.add(function (delta) {
 
-                        video.addEventListener("canplay", () => {
-                            console.log("Video ready.");
-                            backgroundTexture = PIXI.Texture.from(video, PIXI.SCALE_MODES.LINEAR, true, false);
-                            simpleShader.uniforms.background = backgroundTexture;
-                            app.ticker.add(() => {
-                                backgroundTexture.update();
-                            });
-                        });
+            // Update sprites.
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let child = sprites.getChildAt(i);
 
-                        video.play();
+                let age = (Date.now() - child.birth) / (child.death - child.birth);
 
-                    } catch (e) {
-                        console.log("FAIL");
-                    }
-                })();
+                if (age >= 1) {
+                    child.destroy();
+                } else {
+                    child.scale.set((1 - age) * 2.0);
+                }
+            };
 
-            }
+            // Draw to texture.
+            renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
+            app.renderer.render(sprites, renderTexture, true);
+        });
 
-            // Pixi setup.
+        // WebRTC
+        const video = params.get("video") || false;
 
-            app = new PIXI.Application({
-                width: 300,
-                height: 300,
-                transparent: true,
-                resizeTo: mainDiv,
-                autoDensity: true,
-                resolution: devicePixelRatio,
-            });
-            mainDiv.appendChild(app.view);
+        if (video != 0) {
+            const constraints = window.constraints = {
+                audio: false,
+                video: { width: 1280, height: 720 }
+            };
 
-            // Render texture setup.
+            (async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-            let width = app.renderer.width;
-            let height = app.renderer.height;
+                    const video = document.querySelector('video');
 
-            const renderTexture = PIXI.RenderTexture.create(width, height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
-            const renderTextureSprite = new PIXI.Sprite(renderTexture);
-            app.stage.addChild(renderTextureSprite)
+                    const videoTracks = stream.getVideoTracks();
+                    console.log('Got stream with constraints:', constraints);
+                    console.log(`Using video device: ${videoTracks[0].label}`);
+                    window.stream = stream;
+                    video.srcObject = stream;
 
-            // Gradient texture setup.
+                    video.addEventListener("canplay", () => {
+                        console.log("Video ready.");
+                        backgroundTexture = PIXI.Texture.from(video);
+                        simpleShader.uniforms.background = backgroundTexture;
+                        app.ticker.add(() => { backgroundTexture.update(); });
+                    });
 
-            let backgroundTexture = PIXI.Texture.from("textures/background.jpg");
+                    video.play();
+                } catch (e) {
+                    console.log("Video failed to initialize.");
+                }
+            })();
+        }
 
-            // Shader setup.
+        // Handle resize.
+        window.addEventListener('resize', function () {
+            renderTextureSprite.width = app.renderer.width;
+            renderTextureSprite.height = app.renderer.height;
 
-            const fragmentShader = document.getElementById("fragment").innerHTML
-            const simpleShader = new PIXI.Filter(null, fragmentShader);
+            renderTexture.resize(app.renderer.width, app.renderer.height, true);
+        });
 
-            simpleShader.uniforms.background = backgroundTexture;
-            renderTextureSprite.filters = [simpleShader]
+        // Local click handler.
+        document.addEventListener("click", function (event) {
 
-            // Particle container.
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
 
-            sprites = new PIXI.ParticleContainer(10000, {
-                scale: true,
-                position: true,
-                rotation: true,
-                uvs: true
-            });
-            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+            drawClick(normalizedX, normalizedY);
 
-            // Draw clicks.
-
-            function drawClick(clickX, clickY) {
-
-                const screenX = parseInt(clickX * mainDiv.clientWidth);
-                const screenY = parseInt(clickY * mainDiv.clientHeight);
-                const dude = PIXI.Sprite.from('sprites/particle.png');
-
-                dude.anchor.set(0.5);
-                dude.x = screenX;
-                dude.y = screenY;
-
-                dude.birth = Date.now();
-                dude.death = dude.birth + (10 * 1000);
-
-                sprites.addChild(dude);
-            }
-
-            //
-
-            let clock = 0;
-
-            app.ticker.add(function (delta) {
-
-                // Update sprites.
-
-                for (let i = sprites.children.length - 1; i >= 0; i--) {
-                    let child = sprites.getChildAt(i);
-
-                    let age = (Date.now() - child.birth) / (child.death - child.birth);
-
-                    if (age >= 1) {
-                        child.destroy();
-                    } else {
-                        child.scale.set((1 - age) * 2.0);
-                    }
-
-                };
-
-                // Draw to texture.
-
-                renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
-                app.renderer.render(sprites, renderTexture, true);
-
-                clock += delta;
-            });
-
-        })();
+        });
 
 
     </script>
+
+
 </body>
 
 </html>

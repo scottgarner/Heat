@@ -1,53 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-
     <title>Heatmap</title>
 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
     <style>
-        body,
-        html {
-            height: 100%;
-        }
-
-        body {
-            background-color: rgba(0, 0, 0, 0);
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-        }
-
-        body.demo {
-            background: #2b3990;
-            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
-        }
-
-        #main {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            user-select: none;
-
-
-        }
-
         #main.demo {
             background: url('textures/map.svg') no-repeat center center fixed;
             background-size: cover;
         }
     </style>
-
 </head>
 
 <body>
-
     <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
 
     <script id="fragment" type="text/plain">
 
@@ -75,148 +49,113 @@
         
     </script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
-
-    <script src="/js/heat.js"></script>
-
     <script>
+        "use strict";
 
-        (function () {
-
-            let app, sprites;
-
-            // Demo background
-
+        // Initialize Heat.
+        {
             const params = (new URL(document.location)).searchParams;
-            const demo = params.get("demo") || false;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-            if (demo) {
-
-                document.getElementById("main").classList.add('demo');
-            }
-
-            // Event handlers.
-
-            document.addEventListener("click", function (event) {
-
-                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
-                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
-
-                drawClick(normalizedX, normalizedY);
-
-            });
-
+            const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
                 drawClick(e.detail.x, e.detail.y);
             });
+        }
 
-            window.addEventListener('resize', function () {
-                renderTextureSprite.width = app.renderer.width;
-                renderTextureSprite.height = app.renderer.height;
+        // Main container.
+        let main = document.getElementById('main');
 
-                renderTexture.resize(app.renderer.width, app.renderer.height, true);
-            });
+        // Pixi setup.
+        const app = new PIXI.Application({
+            width: 300,
+            height: 300,
+            transparent: true,
+            resizeTo: main,
+            autoDensity: true,
+            resolution: devicePixelRatio,
+        });
+        document.getElementById('main').appendChild(app.view);
 
-            // DOM elements.
+        // Gradient texture setup.
+        const gradientTexture = PIXI.Texture.from("sprites/gradient.png");
 
-            mainDiv = document.getElementById('main');
+        // Render texture setup.
+        let width = app.renderer.width;
+        let height = app.renderer.height;
+        const renderTexture = PIXI.RenderTexture.create(width, height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
+        const renderTextureSprite = new PIXI.Sprite(renderTexture);
+        app.stage.addChild(renderTextureSprite)
 
-            // Pixi setup.
+        // Shader setup.
+        const fragmentShader = document.getElementById("fragment").innerHTML
+        const simpleShader = new PIXI.Filter(null, fragmentShader);
+        simpleShader.uniforms.gradient = gradientTexture;
+        renderTextureSprite.filters = [simpleShader]
 
-            app = new PIXI.Application({
-                width: 300,
-                height: 300,
-                transparent: true,
-                resizeTo: mainDiv,
-                autoDensity: true,
-                resolution: devicePixelRatio,
-            });
-            document.getElementById('main').appendChild(app.view);
+        // Particle container.
+        const sprites = new PIXI.ParticleContainer(10000, {
+            scale: true,
+            position: true,
+            rotation: true,
+            uvs: true
+        });
+        sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
 
+        // Draw click sprites.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+            const particle = PIXI.Sprite.from('sprites/particle.png');
 
-            // Gradient texture setup.
+            particle.anchor.set(0.5);
+            particle.x = screenX;
+            particle.y = screenY;
+            particle.alpha = .2;
 
-            const gradientTexture = PIXI.Texture.from("sprites/gradient.png");
+            particle.birth = Date.now();
+            particle.death = particle.birth + 10 * 1000;
 
-            // Render texture setup.
+            sprites.addChild(particle);
+        }
 
-            let width = app.renderer.width;
-            let height = app.renderer.height;
+        // Render loop.
+        app.ticker.add(function (delta) {
+            // Update sprites.
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let child = sprites.getChildAt(i);
 
-            const renderTexture = PIXI.RenderTexture.create(width, height, PIXI.SCALE_MODES.LINEAR, devicePixelRatio);
-            const renderTextureSprite = new PIXI.Sprite(renderTexture);
-            app.stage.addChild(renderTextureSprite)
+                let age = (Date.now() - child.birth) / (child.death - child.birth);
 
-            // Shader setup.
+                if (age >= 1) {
+                    child.destroy();
+                } else {
+                    let scale = (1 - age) * 2;
+                    child.scale.set(scale);
+                }
+            };
 
-            const fragmentShader = document.getElementById("fragment").innerHTML
-            const simpleShader = new PIXI.Filter(null, fragmentShader);
+            // Render to texture.
+            renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
+            app.renderer.render(sprites, renderTexture, true);
+        });
 
-            simpleShader.uniforms.gradient = gradientTexture;
-            renderTextureSprite.filters = [simpleShader]
+        // Handle local clicks.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+            drawClick(normalizedX, normalizedY);
+        });
 
-            // Particle container.
-
-            sprites = new PIXI.ParticleContainer(10000, {
-                scale: true,
-                position: true,
-                rotation: true,
-                uvs: true
-            });
-            sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
-
-            // Draw click sprites.
-
-            function drawClick(clickX, clickY) {
-
-                const screenX = parseInt(clickX * mainDiv.clientWidth);
-                const screenY = parseInt(clickY * mainDiv.clientHeight);
-                const dude = PIXI.Sprite.from('sprites/particle.png');
-
-                dude.anchor.set(0.5);
-                dude.x = screenX;
-                dude.y = screenY;
-                dude.alpha = .2;
-
-                dude.birth = Date.now();
-                dude.death = dude.birth + 10 * 1000;
-
-                sprites.addChild(dude);
-            }
-
-            //
-
-            let clock = 0;
-
-            app.ticker.add(function (delta) {
-
-                // Update sprites.
-
-                for (let i = sprites.children.length - 1; i >= 0; i--) {
-                    let child = sprites.getChildAt(i);
-
-                    let age = (Date.now() - child.birth) / (child.death - child.birth);
-
-                    if (age >= 1) {
-                        child.destroy();
-                    } else {
-                        let scale = (1 - age) * 2;
-                        child.scale.set(scale);
-                    }
-
-                };
-
-                // Render to texture.
-
-                renderTexture.baseTexture.clearColor = [0, 0, 0, 1];
-                app.renderer.render(sprites, renderTexture, true);
-
-                clock += delta;
-            });
-
-        })();
-
+        // Handle window resize.
+        window.addEventListener('resize', function () {
+            renderTextureSprite.width = app.renderer.width;
+            renderTextureSprite.height = app.renderer.height;
+            renderTexture.resize(app.renderer.width, app.renderer.height, true);
+        });
     </script>
 
 </body>
