@@ -1,33 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Sequence</title>
 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
     <style>
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: rgba(0, 0, 0, 0);
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-        }
-
-        body.demo {
-            background: #2b3990;
-            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
-        }
-
         #container {
             position: fixed;
             top: 0;
@@ -78,109 +58,100 @@
     <div id="container" class="row"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.7.5/Tone.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
 
+    <script src="/js/demo.js"></script>
     <script src="/js/heat.js"></script>
 
     <script>
+        "use strict";
 
-        (function () {
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-            // Event listeners.
-
+            const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
-
                 const x = parseInt(e.detail.x * window.innerWidth);
                 const y = parseInt(e.detail.y * window.innerHeight);
-
                 var element = document.elementFromPoint(x, y);
-
                 element.click();
             });
+        }
 
-            //  Grid setup.
+        //  Grid setup.
+        let columns = 32;
+        let rows = 12;
 
-            let columns = 32;
-            let rows = 12;
+        let container = document.getElementById('container');
 
-            let container = document.getElementById('container');
+        for (let x = 0; x < columns; x++) {
+            let column = document.createElement('div');
+            column.classList.add('column');
+            container.appendChild(column);
 
-            for (let x = 0; x < columns; x++) {
+            for (let y = 0; y < rows; y++) {
+                let row = document.createElement('div');
+                row.classList.add('row');
+                row.classList.add('inactiveRow');
+                column.appendChild(row);
 
-                let column = document.createElement('div');
-                column.classList.add('column');
-                container.appendChild(column);
+                row.addEventListener('click', function () {
+                    if (Tone.context.state !== 'running') {
+                        Tone.context.resume();
+                    }
 
-                for (let y = 0; y < rows; y++) {
+                    row.classList.toggle('activeRow');
+                })
+            }
+        }
 
-                    let row = document.createElement('div');
-                    row.classList.add('row');
-                    row.classList.add('inactiveRow');
-                    column.appendChild(row);
+        // Synth setup.
+        let notes = ["C3", "E3", "G3", "B3", "C4", "E4", "G4", "B4", "C5", "E5", "G5", "B5"];
 
-                    row.addEventListener('click', function () {
+        let synth = new Tone.PolySynth(6, Tone.Synth).toMaster();
+        synth.set({
+            oscillator: {
+                type: "square0"
+            },
+            envelope: {
+                attack: 0.005,
+                decay: 0.1,
+                sustain: 0.3,
+                release: 1
+            }
+        });
+        synth.volume.value = -6;
 
-                        if (Tone.context.state !== 'running') {
-                            Tone.context.resume();
-                        }
+        // Sequence setup.
+        let currentColumn, currentRow, lastColumn;
+        let loop = new Tone.Sequence(function (time, columnIndex) {
 
-                        row.classList.toggle('activeRow');
+            if (currentColumn) lastColumn = currentColumn;
+            currentColumn = container.childNodes[columnIndex];
 
-                    })
+            for (let rowIndex = 0; rowIndex < currentColumn.childNodes.length; rowIndex++) {
 
+                currentRow = currentColumn.childNodes[rowIndex];
+                if (currentRow.classList.contains("activeRow")) {
+                    currentRow.classList.toggle('activeRow');
+                    synth.triggerAttackRelease(notes[rowIndex], "8n");
                 }
 
             }
 
-            // Synth setup.
+            Tone.Draw.schedule(function () {
+                if (lastColumn) lastColumn.classList.toggle('activeColumn');
+                if (currentColumn) currentColumn.classList.toggle('activeColumn');
+            }, time);
 
-            let notes = ["C3", "E3", "G3", "B3", "C4", "E4", "G4", "B4", "C5", "E5", "G5", "B5"];
+        }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], "8n").start(0);
 
-            let synth = new Tone.PolySynth(6, Tone.Synth).toMaster();
-            synth.set({
-                oscillator: {
-                    type: "square0"
-                },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.1,
-                    sustain: 0.3,
-                    release: 1
-                }
-            });
-            //synth.volume.value = -12;
-
-
-            // Sequence setup.
-
-            let currentColumn, lastColumn;
-            let loop = new Tone.Sequence(function (time, columnIndex) {
-
-                if (currentColumn) lastColumn = currentColumn;
-                currentColumn = container.childNodes[columnIndex];
-
-                for (let rowIndex = 0; rowIndex < currentColumn.childNodes.length; rowIndex++) {
-
-                    currentRow = currentColumn.childNodes[rowIndex];
-                    if (currentRow.classList.contains("activeRow")) {
-                        currentRow.classList.toggle('activeRow');
-                        synth.triggerAttackRelease(notes[rowIndex], "8n");
-                    }
-
-                }
-
-                Tone.Draw.schedule(function () {
-                    if (lastColumn) lastColumn.classList.toggle('activeColumn');
-                    if (currentColumn) currentColumn.classList.toggle('activeColumn');
-                }, time);
-
-            }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31], "8n").start(0);
-
-            // Tone setup.
-
-            Tone.Transport.start();
-
-        })();
+        // Tone setup.
+        Tone.Transport.start();
 
     </script>
 

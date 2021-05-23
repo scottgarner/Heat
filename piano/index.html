@@ -1,22 +1,13 @@
+<!DOCTYPE html>
 <html>
 
 <head>
-    <title>Kissing Booth</title>
+    <title>Piano</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
     <style>
-        body {
-            background: rgb(0, 255, 0);
-        }
-
-        #main {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            user-select: none;
-            text-align: center;
-        }
-
         .key {
             position: relative;
             display: inline-block;
@@ -60,8 +51,6 @@
 <body>
 
     <div id="main">
-
-
         <div id="C3" class="key">
             <div class="keyOverlay"></div>
         </div>
@@ -138,108 +127,101 @@
 
     </div>
 
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/13.7.4/Tone.min.js"></script>
 
+    <script src="/js/demo.js"></script>
     <script src="/js/heat.js"></script>
 
     <script>
+        "use strict";
 
-        let synth;
-        let totalClickCount = 0;
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-        (function () {
-
-
-            synth = new Tone.Synth({
-                oscillator: {
-                    type: "square0"
-                },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.1,
-                    sustain: 0.3,
-                    release: 1
-                }
-            }).toMaster();
-
+            const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
-
                 const x = parseInt(e.detail.x * $(window).width());
                 const y = parseInt(e.detail.y * $(window).height());
 
-                console.log(x, y);
-
                 var element = document.elementFromPoint(x, y);
-
                 $(element).trigger('click');
             });
+        }
+
+        let totalClickCount = 0;
+        let synth = new Tone.Synth({
+            oscillator: {
+                type: "square0"
+            },
+            envelope: {
+                attack: 0.005,
+                decay: 0.1,
+                sustain: 0.3,
+                release: 1
+            }
+        }).toMaster();
+
+        // Key handling.
+        $(".key").each(function (index) {
+            $(this).data("clickCount", 0);
+        });
+
+        $(document).on('click', '.key', function (event) {
+
+            if (Tone.context.state !== 'running') {
+                Tone.context.resume();
+            }
 
 
-            //
+            let clickCount = $(this).data("clickCount");
+            clickCount++;
+            totalClickCount++;
+            $(this).data("clickCount", clickCount);
 
             $(".key").each(function (index) {
-                $(this).data("clickCount", 0);
-            });
-
-            $(document).on('click', '.key', function (event) {
-
-                if (Tone.context.state !== 'running') {
-                    Tone.context.resume();
-                }
-
-
                 let clickCount = $(this).data("clickCount");
-                clickCount++;
-                totalClickCount++;
-                $(this).data("clickCount", clickCount);
-
-                $(".key").each(function (index) {
-                    let clickCount = $(this).data("clickCount");
-                    let alpha = (clickCount * 1.0) / totalClickCount;
-                    $(this).find(".keyOverlay").css('opacity', 1 * alpha);
-                });
-
+                let alpha = (clickCount * 1.0) / totalClickCount;
+                $(this).find(".keyOverlay").css('opacity', 1 * alpha);
             });
 
+        });
 
+        Tone.Transport.scheduleRepeat(() => {
+            let winner;
+            let winnerCount = 0;
 
+            $(".key").each(function (index) {
+                let clickCount = $(this).data("clickCount");
 
-            Tone.Transport.scheduleRepeat(() => {
-
-                let winner;
-                let winnerCount = 0;
-
-                $(".key").each(function (index) {
-
-                    let clickCount = $(this).data("clickCount");
-
-                    if (clickCount > winnerCount) {
-                        winner = $(this);
-                        winnerCount = clickCount;
-                    }
-
-                    $(this).data("clickCount", 0);
-                    $(this).removeClass("keyPressed");
-                    $(this).find(".keyOverlay").css('opacity', 0);
-                });
-
-                if (winner) {
-
-                    synth.triggerAttackRelease($(winner).attr('id'), "4n");
-                    console.log($(winner).attr('id'));
-
-                    $(winner).addClass("keyPressed");
+                if (clickCount > winnerCount) {
+                    winner = $(this);
+                    winnerCount = clickCount;
                 }
 
-                totalClickCount = 0;
+                $(this).data("clickCount", 0);
+                $(this).removeClass("keyPressed");
+                $(this).find(".keyOverlay").css('opacity', 0);
+            });
 
-            }, "4n");
+            if (winner) {
+                synth.triggerAttackRelease($(winner).attr('id'), "4n");
+                console.log($(winner).attr('id'));
 
-            Tone.Transport.start();
+                $(winner).addClass("keyPressed");
+            }
 
-        })();
+            totalClickCount = 0;
+
+        }, "4n");
+
+        Tone.Transport.start();
 
     </script>
 

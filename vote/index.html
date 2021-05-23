@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Vote</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
+    <style>
+        .marker {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-image: url('sprites/marker.svg');
+            background-size: 100% 100%;
+        }
+
+        #main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #rule {
+            position: absolute;
+            width: .25em;
+            height: 100%;
+            background: white;
+            z-index: -1;
+            border: 4px solid #333;
+        }
+
+        #banner {
+            display: inline;
+            background: white;
+            color: #333;
+            border: 4px solid #333;
+            font-size: 24pt;
+            font-family: sans-serif;
+            font-weight: bold;
+            padding: .5em;
+            border-radius: .25em;
+        }
+
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main">
+        <div id="rule"></div>
+        <div id="container"></div>
+        <div id="banner">0</div>
+    </div>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+        "use strict";
+        const params = (new URL(document.location)).searchParams;
+
+        const timeout = params.get("timeout") || 30;
+
+        const main = document.getElementById("main");
+        const banner = document.getElementById("banner");
+        const container = document.getElementById("container");
+
+        // Initialize Heat.
+        {
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
+
+            const heat = new Heat(channel);
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y, e.detail.id);
+            });
+        }
+
+        // Marker container.
+        let markers = new Map();
+
+        // Create/update markers.
+        function drawClick(x, y, id) {
+            if (markers.has(id)) {
+                markers.get(id).update(x, y);
+            } else {
+                let marker = new Marker(x, y);
+                markers.set(id, marker);
+            }
+        }
+
+        // Local clicks.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY, -1);
+        });
+
+
+        function animate(now) {
+            if ((timeout * 1000) - now > 0) {
+                let current = Math.round(timeout - (now / 1000));
+                banner.innerText = current;
+                requestAnimationFrame(animate);
+            } else {
+                let left = 0;
+                let right = 0;
+
+                markers.forEach((marker) => {
+                    console.log(marker);
+                    if (marker.x > .5) right++;
+                    else if (marker.x < .5) left++;
+                });
+
+                if (left > right)
+                    banner.innerText = left + " vs " + right;
+                else if (right > left)
+                    banner.innerText = left + " vs " + right;
+                else
+                    banner.innerText = "tie!";
+
+                setTimeout(() => {
+                    main.style.display = "none";
+                }, 5000);
+
+            }
+        };
+        requestAnimationFrame(animate);
+
+    </script>
+
+    <script>
+        // Marker class.
+        class Marker {
+            x;
+            y;
+            element;
+
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+
+                this.element = document.createElement("div");
+                this.element.classList.add("marker");
+                container.appendChild(this.element);
+                this.update(x, y);
+            }
+
+            update(x, y) {
+                this.x = x;
+                this.y = y;
+
+                this.element.style.left = (x * window.innerWidth) - 16 + "px";
+                this.element.style.top = (y * window.innerHeight) - 32 + "px";
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>

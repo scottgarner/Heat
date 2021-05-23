@@ -1,209 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Names</title>
 
-    <style>
-        body,
-        html {
-            height: 100%;
-        }
-
-        body {
-            background: #2b3990;
-            background: linear-gradient(45deg, #2b3990 0%, #92278f 100%);
-            overflow: hidden;
-        }
-
-        #main {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            user-select: none;
-
-        }
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
 </head>
 
 <body>
-
     <div id="main"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.0.0-rc/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
 
     <script>
-        (function () {
+        "use strict";
 
-            // DOM elements.
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
 
-            mainDiv = document.getElementById('main');
-
-            // Event handlers.
-
-            document.addEventListener("click", function (event) {
-
-                const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
-                const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
-
-                drawClick(normalizedX, normalizedY, "LocalTest");
-
+            const heat = new Heat(channel);
+            heat.addEventListener('click', async (e) => {
+                let user = await heat.getUserById(e.detail.id);
+                drawClick(e.detail.x, e.detail.y, user.display_name);
             });
+        }
 
-            window.addEventListener('resize', function () {
-                renderTextureSprite.width = app.renderer.width;
-                renderTextureSprite.height = app.renderer.height;
+        // Main container.
+        let main = document.getElementById('main');
 
-                renderTexture.resize(app.renderer.width, app.renderer.height, true);
-            });
+        // Pixi setup.
+        let app = new PIXI.Application({
+            transparent: true,
+            resizeTo: main,
+            autoDensity: true,
+            resolution: devicePixelRatio,
+        });
+        document.getElementById('main').appendChild(app.view);
 
-            // Websocket connection.
+        // Font style.
+        var style = new PIXI.TextStyle({
+            fontFamily: 'Arial',
+            fontSize: 128,
+            fontWeight: 'bold',
+            fill: ['#0ab89d', '#07856a'],
+        });
 
-            function connect() {
-                let ws = new WebSocket('wss://heat-ebs.j38.net/');
+        // Draw clicks.
+        function drawClick(clickX, clickY, user) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
 
-                ws.addEventListener('open', function open() {
-                    console.log("WS OPEN");
-                    ws.send(JSON.stringify({ channel: 97032862 }));
-                });
+            var richText = new PIXI.Text(user, style);
+            richText.x = screenX;
+            richText.y = screenY;
 
-                ws.addEventListener('message', function incoming(message) {
-                    let jsonData = JSON.parse(message.data);
-                    if (jsonData.type == "click") {
+            richText.birth = Date.now();
+            richText.death = richText.birth + 2500;
 
-                        getUser(jsonData.id, (user) => {
-                            drawClick(jsonData.x, jsonData.y, user);
-                        });
+            app.stage.addChild(richText);
+        }
 
-                    }
-                });
+        // Render loop.
+        app.ticker.add(function (delta) {
+            for (let i = app.stage.children.length - 1; i >= 0; i--) {
+                let userName = app.stage.getChildAt(i);
 
-                ws.addEventListener('error', function (e) {
-                    console.log("ERROR");
-                    console.log(e);
-                });
+                let age = (Date.now() - userName.birth) / (userName.death - userName.birth);
 
-                ws.addEventListener('close', function (e) {
-                    console.log("CLOSE");
-                    console.log(e);
-                    ws = null
-                    setTimeout(connect, 1000)
-                });
-            }
-
-            connect();
-
-            // User lookups.
-
-            function getUser(id, done) {
-
-                if (id.startsWith("A")) {
-                    done("Anonymous");
-                    return;
+                if (age >= 1) {
+                    userName.destroy();
+                } else {
+                    userName.scale.set((1 - age));
                 }
+            };
+        });
 
-                if (id.startsWith("U")) {
-                    done("Unverified");
-                    return;
-                }
+        // Local click handler.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
 
+            drawClick(normalizedX, normalizedY, "LocalTest");
+        });
 
-                const url = `https://api.twitch.tv/kraken/users/${id}`;
-
-                const httpRequest = new XMLHttpRequest();
-                httpRequest.open("GET", url, true);
-
-                httpRequest.setRequestHeader('Accept', 'application/vnd.twitchtv.v5+json');
-                httpRequest.setRequestHeader('Client-ID', 'cr20njfkgll4okyrhag7xxph270sqk');
-
-                httpRequest.onload = function (e) {
-                    if (httpRequest.readyState === 4) {
-                        if (httpRequest.status === 200) {
-                            let responseData = JSON.parse(httpRequest.responseText);
-                            done(responseData.display_name);
-
-                        } else {
-                            console.log(httpRequest.responseText);
-                            console.log(httpRequest.status);
-                            console.log(httpRequest.statusText);
-                        }
-                    }
-                };
-
-                httpRequest.send();
-
-            }
-
-            // Pixi setup.
-
-            let app = new PIXI.Application({
-                width: 300,
-                height: 300,
-                transparent: true,
-                resizeTo: mainDiv,
-                autoDensity: true,
-                resolution: devicePixelRatio,
-            });
-            document.getElementById('main').appendChild(app.view);
-
-            // Font style.
-
-            var style = new PIXI.TextStyle({
-                fontFamily: 'Arial',
-                fontSize: 128,
-                fontWeight: 'bold',
-                fill: ['#FF00FF', '#cc00cc'], // gradient
-            });
-
-
-            // Draw clicks.
-
-            function drawClick(clickX, clickY, user) {
-
-                const screenX = parseInt(clickX * mainDiv.clientWidth);
-                const screenY = parseInt(clickY * mainDiv.clientHeight);
-
-                var richText = new PIXI.Text(user, style);
-                richText.x = screenX;
-                richText.y = screenY;
-
-                richText.birth = Date.now();
-                richText.death = richText.birth + 2500;
-
-                app.stage.addChild(richText);
-
-            }
-
-            // Render loop.
-
-            let clock = 0;
-
-            app.ticker.add(function (delta) {
-
-                for (let i = app.stage.children.length - 1; i >= 0; i--) {
-                    let userName = app.stage.getChildAt(i);
-
-                    let age = (Date.now() - userName.birth) / (userName.death - userName.birth);
-
-                    if (age >= 1) {
-                        userName.destroy();
-                    } else {
-                        userName.scale.set((1 - age));
-                    }
-
-
-                };
-
-                clock += delta;
-            });
-
-        })();
     </script>
 
 </body>
