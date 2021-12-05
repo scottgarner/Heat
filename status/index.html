@@ -1,0 +1,45 @@
+<style>
+    a {
+        display: block;
+    }
+</style>
+<script>
+
+    async function main() {
+
+
+        let response = await fetch("https://heat-api.j38.net/status");
+        let json = await response.json();
+        console.log(JSON.stringify(json));
+
+        let channelIds = new Set();
+        json.channelConnections.forEach(async (replica) => {
+            replica.forEach(async (channel) => {
+                let channelId = channel.id;
+                channelIds.add(channelId);
+            })
+        });
+
+        channelIds.forEach(async (channelId) => {
+            let response = await fetch("https://api.twitch.tv/kraken/users/" + channelId, {
+                headers: {
+                    "Client-ID": "cr20njfkgll4okyrhag7xxph270sqk",
+                    'Accept': "application/vnd.twitchtv.v5+json"
+                },
+            });
+            let json = await response.json();
+            console.log(JSON.stringify(json.name));
+
+            let anchor = document.createElement("a");
+            anchor.setAttribute("href", "https://twitch.tv/" + json.name);
+            anchor.innerText = json.name;
+            document.body.appendChild(anchor);
+        });
+
+    }
+
+    //curl -H 'Accept: application/vnd.twitchtv.v5+json' -H 'Client-ID: cr20njfkgll4okyrhag7xxph270sqk' -X GET https://api.twitch.tv/kraken/users/30068911
+
+    main();
+
+</script>
