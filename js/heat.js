@@ -18,7 +18,6 @@ class Heat extends EventTarget {
 
     connect() {
         let url = `wss://heat-api.j38.net/channel/${this.channelId}`;
-        //let url = `wss://heat-api.j38.workers.dev/channel/${this.channelId}`;
         this.log(`Connecting to ${url}.`);
         let ws = new WebSocket(url);
 
