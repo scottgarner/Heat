@@ -7,34 +7,35 @@
 </head>
 
 <body>
-    Check the debug console.
+    <!-- Container for incoming Heat data. -->
+    <pre id="data">Waiting for data.</pre>
 
-    <script src="/js/heat.js"></script>
     <script>
+        // Twitch channel ID for ScottMadeThis.
+        // Replace with your own channel ID.
+        const channel = 97032862;
 
-        // Determine channel from URL or fall back to ScottMadeThis.
-        const params = (new URL(document.location)).searchParams;
-        const channel = params.get("channel") ||
-            params.get("channelId") ||
-            params.get("channelID") ||
-            97032862;
+        // Connect to the Heat back-end.
+        let url = `wss://heat-api.j38.net/channel/${channel}`;
+        let ws = new WebSocket(url);
 
-        // Initialize Heat.
-        const heat = new Heat(channel);
+        // Connection successful. 
+        ws.addEventListener('open', () => {
+            console.log(`Connection open to Heat API server, channel ${channel}.`);
+        });
 
-        // Listen for clicks.
-        heat.addEventListener('click', async (e) => {
+        // Message received.
+        ws.addEventListener('message', (message) => {
+            // Parse message data.
+            let data = JSON.parse(message.data);
 
-            // Log click details
-            console.log(e.detail);
+            // Write to console.
+            console.log(data);
 
-            // Request and log user details.
-            let user = await heat.getUserById(e.detail.id);
-            console.log(user);
-
+            // Display in the DOM.
+            document.getElementById('data').innerText = JSON.stringify(data, null, ' ');
         });
     </script>
-
 </body>
 
 </html>
