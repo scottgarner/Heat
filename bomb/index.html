@@ -1,0 +1,203 @@
+<html>
+
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div id="main">
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"
+            integrity="sha512-5T245ZTH0m0RfONiFm2NF0zcYcmAuNzcGyPSQ18j8Bs5Pbfhp5HP1hosrR8XRt5M3kSRqzjNMYpm2+it/AUX/g=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+        <script src="/js/demo.js"></script>
+        <script src="/js/heat.js"></script>
+
+        <script>
+            "use strict";
+
+            // Initialize Heat.
+            {
+                const params = (new URL(document.location)).searchParams;
+                const channel = params.get("channel") ||
+                    params.get("channelId") ||
+                    params.get("channelID") ||
+                    97032862;
+
+                const heat = new Heat(channel);
+                heat.addEventListener('click', (e) => {
+                    if (e.detail.modifiers) {
+                        addForce(e.detail.x, e.detail.y, e.detail.modifiers);
+                    } else {
+                        addBody(e.detail.x, e.detail.y);
+                    }
+                });
+            }
+
+            // Mouse
+
+            window.addEventListener("click", (e) => {
+                const normalizedX = (e.clientX * 1.0 / window.innerWidth).toPrecision(3);
+                const normalizedY = (e.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+                const modifiers = {
+                    shift: e.shiftKey,
+                    ctrl: e.ctrlKey,
+                    alt: e.altKey
+                }
+
+                if (modifiers.shift || modifiers.alt || modifiers.ctrl) {
+                    addForce(normalizedX, normalizedY, modifiers);
+                } else {
+                    addBody(normalizedX, normalizedY);
+                }
+            });
+
+            // Matter
+
+            // module aliases
+            let Engine = Matter.Engine,
+                Render = Matter.Render,
+                Runner = Matter.Runner,
+                Body = Matter.Body,
+                Bodies = Matter.Bodies,
+                Common = Matter.Common,
+                Composite = Matter.Composite;
+
+            // create an engine
+            let engine = Engine.create();
+
+            // create a renderer
+            let render = Render.create({
+                element: document.body,
+                engine: engine,
+                options: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    wireframes: false,
+                    background: "transparent",
+                    //showStats: true,
+                    //showPerformance: true
+                }
+            });
+
+            let borderWidth = 512;
+            let ballRadius = 32;
+
+            let bottomBorder = Bodies.rectangle(
+                render.options.width / 2, render.options.height + (borderWidth / 2),
+                render.options.width + (borderWidth * 2), borderWidth,
+                { isStatic: true });
+
+            let topBorder = Bodies.rectangle(
+                render.options.width / 2, -borderWidth / 2,
+                render.options.width + (borderWidth * 2), borderWidth,
+                { isStatic: true });
+
+            let leftBorder = Bodies.rectangle(
+                -borderWidth / 2, render.options.height / 2,
+                borderWidth, render.options.height + (borderWidth * 2),
+                { isStatic: true });
+
+            let rightBorder = Bodies.rectangle(
+                render.options.width + (borderWidth / 2), render.options.height / 2,
+                borderWidth, render.options.height + (borderWidth * 2),
+                { isStatic: true });
+
+            // add all of the bodies to the world
+            Composite.add(engine.world, [topBorder, bottomBorder, leftBorder, rightBorder]);
+
+            // run the renderer
+            Render.run(render);
+
+            // create runner
+            var runner = Runner.create();
+
+            // run the engine
+            Runner.run(runner, engine);
+
+            function addBody(x, y) {
+
+                let texture = Common.choose([
+                    './images/yellow.png',
+                    './images/green.png',
+                    './images/blue.png',
+                    './images/red.png',
+                ]);
+
+                let body = Bodies.circle(
+                    x * render.options.width,
+                    y * render.options.height,
+                    ballRadius,
+                    {
+                        density: 0.005,
+                        frictionAir: 0.0001,
+                        restitution: 0.3,
+                        friction: 0.001,
+                        render: {
+                            sprite: {
+                                texture: texture
+                            }
+                        }
+                    });
+                Composite.add(engine.world, body);
+            }
+
+            function addForce(x, y, modifiers) {
+                let source = {
+                    x: x * render.options.width,
+                    y: y * render.options.height
+                };
+
+                let bodies = Composite.allBodies(engine.world);
+
+                bodies.forEach((body) => {
+                    if (!body.isStatic) {
+
+                        let force;
+
+                        if (modifiers.shift) {
+                            force = {
+                                x: body.position.x - source.x,
+                                y: body.position.y - source.y
+                            }
+                        } else if (modifiers.ctrl) {
+                            force = {
+                                x: source.x - body.position.x,
+                                y: source.y - body.position.y
+                            }
+                        } else if (modifiers.alt) {
+                            force = {
+                                x: 0,
+                                y: 1
+                            }
+                        }
+
+                        let length = Math.sqrt((force.x * force.x) + (force.y * force.y));
+
+                        force.x = (force.x / length) * 2;
+                        force.y = (force.y / length) * 2;
+
+                        Body.applyForce(body, body.position, force);
+
+                    }
+                });
+
+
+            }
+
+
+        </script>
+
+    </div>
+</body>
+
+</html>
