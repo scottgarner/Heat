@@ -1,45 +1,43 @@
-<style>
-    a {
-        display: block;
-    }
-</style>
-<script>
+<html>
 
-    async function main() {
+<body>
+    <div id="app"></div>
+    <script src="https://unpkg.com/vue@next"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader/dist/vue3-sfc-loader.js"></script>
 
+    <script>
+        const { loadModule } = window['vue3-sfc-loader'];
 
-        let response = await fetch("https://heat-api.j38.net/status");
-        let json = await response.json();
-        console.log(JSON.stringify(json));
+        const options = {
+            moduleCache: {
+                vue: Vue,
+            },
 
-        let channelIds = new Set();
-        json.channelConnections.forEach(async (replica) => {
-            replica.forEach(async (channel) => {
-                let channelId = channel.id;
-                channelIds.add(channelId);
-            })
+            getFile(url) {
+                return fetch(url).then(response => response.ok ? response.text() : Promise.reject(response));
+            },
+
+            addStyle(styleStr) {
+                const style = document.createElement('style');
+                style.textContent = styleStr;
+                const ref = document.head.getElementsByTagName('style')[0] || null;
+                document.head.insertBefore(style, ref);
+            },
+
+            log(type, ...args) {
+                console.log(type, ...args);
+            }
+        };
+
+        const app = Vue.createApp({
+            components: {
+                'status': Vue.defineAsyncComponent(() => loadModule('./status.vue', options))
+            },
+            template: '<status></status>'
         });
 
-        channelIds.forEach(async (channelId) => {
-            let response = await fetch("https://api.twitch.tv/kraken/users/" + channelId, {
-                headers: {
-                    "Client-ID": "cr20njfkgll4okyrhag7xxph270sqk",
-                    'Accept': "application/vnd.twitchtv.v5+json"
-                },
-            });
-            let json = await response.json();
-            console.log(JSON.stringify(json.name));
+        app.mount('#app');
+    </script>
+</body>
 
-            let anchor = document.createElement("a");
-            anchor.setAttribute("href", "https://twitch.tv/" + json.name);
-            anchor.innerText = json.name;
-            document.body.appendChild(anchor);
-        });
-
-    }
-
-    //curl -H 'Accept: application/vnd.twitchtv.v5+json' -H 'Client-ID: cr20njfkgll4okyrhag7xxph270sqk' -X GET https://api.twitch.tv/kraken/users/30068911
-
-    main();
-
-</script>
+</html>
