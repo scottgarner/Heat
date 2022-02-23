@@ -61,14 +61,10 @@ class Heat extends EventTarget {
         if (id.startsWith("U")) return { display_name: "Unverified" };
 
         // Query Twitch for user details.
-        const url = `https://api.twitch.tv/kraken/users/${id}`;
-        const headers = {
-            'Accept': 'application/vnd.twitchtv.v5+json',
-            'Client-ID': 'cr20njfkgll4okyrhag7xxph270sqk'
-        };
+        const url = `https://heat-api.j38.net/user/${id}`;
 
         // Handle response.
-        let response = await fetch(url, { headers });
+        let response = await fetch(url);
         if (response.ok) {
             let data = await response.json();
             this.users.set(id, data);
