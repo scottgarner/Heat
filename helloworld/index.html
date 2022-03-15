@@ -11,9 +11,12 @@
     <pre id="data">Waiting for data.</pre>
 
     <script>
-        // Twitch channel ID for ScottMadeThis.
-        // Replace with your own channel ID.
-        const channel = 97032862;
+        // Set your ChannelId in the URL or replace with your own channel ID.
+        const params = (new URL(document.location)).searchParams;
+        const channel = params.get("channel") ||
+            params.get("channelId") ||
+            params.get("channelID") ||
+            97032862;
 
         // Connect to the Heat back-end.
         let url = `wss://heat-api.j38.net/channel/${channel}`;
