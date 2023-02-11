@@ -56,18 +56,18 @@
 
                 <div class="row justify-content-center align-items-center text-center">
                     <div id="demos" class="btn-group" role="group" aria-label="Basic example">
-                        <a class="btn btn-outline-light" href="/heatmap/">Heat</a>
-                        <a class="btn btn-outline-light" href="/markers/">Markers</a>
-                        <a class="btn btn-outline-light" href="/kissingbooth/">Kiss</a>
-                        <a class="btn btn-outline-light" href="/sequence/">Sequence</a>
+                        <a class="demo btn btn-outline-light" href="/heatmap/">Heat</a>
+                        <a class="demo btn btn-outline-light" href="/markers/">Markers</a>
+                        <a class="demo btn btn-outline-light" href="/kissingbooth/">Kiss</a>
+                        <a class="demo btn btn-outline-light" href="/sequence/">Sequence</a>
                     </div>
                 </div>
                 <div class="row justify-content-center align-items-center text-center">
                     <div id="demos" class="btn-group mt-2" role="group" aria-label="Basic example">
-                        <a class="btn btn-outline-light" href="/baby/">Baby</a>
-                        <a class="btn btn-outline-light" href="/paint/">Paint</a>
-                        <a class="btn btn-outline-light" href="/vote/">Vote</a>
-                        <a class="btn btn-outline-light" href="/tomatoes/">Tomatoes</a>
+                        <a class="demo btn btn-outline-light" href="/baby/">Baby</a>
+                        <a class="demo btn btn-outline-light" href="/paint/">Paint</a>
+                        <a class="demo btn btn-outline-light" href="/vote/">Vote</a>
+                        <a class="demo btn btn-outline-light" href="/tomatoes/">Tomatoes</a>
                         <!-- <a class="btn btn-outline-light" href="/warp/">Warp</a>
                         <a class="btn btn-outline-light" href="/pixel/">Pixel</a> -->
                     </div>
@@ -99,7 +99,7 @@
 
             console.log(channel);
 
-            $("#demos").children().each(function (index, element) {
+            $(".demo").each(function (index, element) {
                 $(element).attr('href', $(element).attr('href') + "?channel=" + channel);
             });
 
