@@ -56,7 +56,7 @@
 
             const heat = new Heat(channel);
             heat.addEventListener('click', (e) => {
-                drawClick(e.detail.x, e.detail.y, user.display_name);
+                drawClick(e.detail.x, e.detail.y);
             });
         }
 
@@ -64,7 +64,7 @@
         let main = document.getElementById('main');
 
         // Draw clicks.
-        function drawClick(clickX, clickY, user) {
+        function drawClick(clickX, clickY) {
             const screenX = parseInt(clickX * main.clientWidth);
             const screenY = parseInt(clickY * main.clientHeight);
 
