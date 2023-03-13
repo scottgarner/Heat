@@ -1,18 +1,18 @@
 <template>
   <table>
     <tr>
-      <th>Channel Id</th>
-      <th>Channel Name</th>
-      <th></th>
-      <th></th>
-      <th></th>
+      <th>Id</th>
+      <th>Name</th>
+      <th>Game Name</th>
+      <th>Title</th>
     </tr>
-    <tr v-for="channel in channels" :key="channel.id">
-      <td>{{ channel.id }}</td>
+    <tr v-for="[id, channel] of channels">
+      <td>{{ channel.broadcaster_id }}</td>
       <td>
-        <a v-bind:href="channel.url">{{ channel.name }}</a>
+        <a :href="channel.url">{{ channel.broadcaster_name }}</a>
       </td>
-      <td>{{ channel.count }}</td>
+      <td>{{ channel.game_name }}</td>
+      <td>{{ channel.title }}</td>
     </tr>
   </table>
 </template>
@@ -27,42 +27,23 @@
 export default {
   data() {
     return {
-      channels: [],
+      channels: new Map(),
     };
   },
   async created() {
-    let response = await fetch("https://heat-api.j38.net/status");
+    let response = await fetch("https://heat-api-staging.j38.workers.dev/live");
     let json = await response.json();
 
-    // Filter respones into single object.
-    let channelObject = {};
-    json.channelConnections.forEach(async (replica) => {
-      replica.forEach(async (channel) => {
-        let channelId = channel.id;
-        if (!(channelId in channelObject)) channelObject[channelId] = 0;
-        channelObject[channelId] += 1;
-      });
+    json.forEach(async (channel) => {
+      if (!this.channels.has(channel.broadcaster_id)) {
+        this.channels.set(channel.broadcaster_id, {
+          ...channel,
+          url: "https://twitch.tv/" + channel.broadcaster_name,
+        });
+        console.log(channel);
+      }
     });
-    // Process individual channels.
-    for (const [channelId, count] of Object.entries(channelObject)) {
-      let response = await fetch(
-        "https://api.twitch.tv/kraken/users/" + channelId,
-        {
-          headers: {
-            "Client-ID": "cr20njfkgll4okyrhag7xxph270sqk",
-            Accept: "application/vnd.twitchtv.v5+json",
-          },
-        }
-      );
 
-      let channelJson = await response.json();
-      this.channels.push({
-        id: channelId,
-        name: channelJson.name,
-        url: "https://twitch.tv/" + channelJson.name,
-        count: count,
-      });
-    }
   },
 };
 </script>
