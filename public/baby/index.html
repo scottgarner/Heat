@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Baby</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+</head>
+
+<body>
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+        "use strict";
+
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
+
+            const heat = new Heat(channel);
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y);
+            });
+        }
+
+        // Main container.
+        let main = document.getElementById('main');
+
+        // Pixi setup.
+        const app = new PIXI.Application({
+            resizeTo: main,
+            autoDensity: true,
+            resolution: devicePixelRatio,
+            transparent: true
+        });
+        main.appendChild(app.view);
+
+        // Sprite container.
+        const sprites = new PIXI.ParticleContainer(10000, {
+            scale: true,
+            position: true,
+            rotation: true,
+            uvs: true
+        });
+        app.stage.addChild(sprites);
+
+        // Create baby.
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let points = [];
+        for (let i = 0; i < 512; i++) {
+            let offset = i * (512 / 512)
+            points.push(new PIXI.Point((width / 2) + offset, height / 2));
+        };
+        const rope = new PIXI.SimpleRope(PIXI.Texture.from("sprites/baby.png"), points);
+        app.stage.addChild(rope);
+
+        // Prepare food.
+
+        var mySpriteSheetImage = PIXI.BaseTexture.from("sprites/food.png");
+
+        let foods = [
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(0, 0, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(128, 0, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(0, 128, 128, 128)),
+            new PIXI.Texture(mySpriteSheetImage, new PIXI.Rectangle(128, 128, 128, 128))
+        ];
+
+        // Draw clicks.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+
+            const foodIndex = Math.floor(Math.random() * foods.length);
+            const food = PIXI.Sprite.from(foods[foodIndex]);
+
+            food.anchor.set(0.5);
+            food.x = screenX;
+            food.y = screenY;
+            food.rotation = (Math.random() * (Math.PI / 2.0)) - (Math.PI / 4.0);
+
+            food.birth = Date.now();
+            food.death = food.birth + 1000;
+
+            sprites.addChild(food);
+        }
+
+        // Animation loop.
+        app.ticker.add(function (delta) {
+            // Update baby.
+            updateBaby(delta);
+
+            // Update food.
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let food = sprites.getChildAt(i);
+
+            };
+        });
+
+        // Update baby.
+        function updateBaby(delta) {
+            if (points.length == 0) return;
+
+            // Find and eat food.
+            let targetSprite;
+            let minLength = Infinity;
+
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let child = sprites.getChildAt(i);
+
+                let offset = new PIXI.Point(
+                    (points[0].x - child.x),
+                    (points[0].y - child.y)
+                );
+
+                let length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+
+                if (length < 10) {
+                    child.destroy();
+                } else if (length < minLength) {
+                    minLength = length;
+                    targetSprite = child;
+                }
+            }
+
+            if (!targetSprite) return;
+
+            // Find offset to food and animate.
+            let targetPoint = new PIXI.Point(targetSprite.x, targetSprite.y);
+
+            let offset = new PIXI.Point(
+                (targetPoint.x - points[0].x),
+                (targetPoint.y - points[0].y)
+            );
+
+            let length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+
+            // Normalize offset.
+            offset.x /= length;
+            offset.y /= length;
+
+            if (length > 100) length = 100;
+
+            // Scale offset.
+            offset.x *= .05 * delta * length;
+            offset.y *= .05 * delta * length;
+
+            points[0].set(points[0].x + offset.x, points[0].y + offset.y)
+
+            // Animate additional points.
+            targetPoint = points[0];
+
+            for (let i = 1; i < points.length; i++) {
+                let currentPoint = points[i];
+
+                let offset = new PIXI.Point(
+                    (targetPoint.x - currentPoint.x),
+                    (targetPoint.y - currentPoint.y)
+                );
+
+                let length = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
+
+                // Normalize
+                offset.x /= length;
+                offset.y /= length;
+
+                // Scale offset.
+                offset.x *= 512 / points.length;
+                offset.y *= 512 / points.length;
+
+                points[i].set(targetPoint.x - offset.x, targetPoint.y - offset.y)
+
+                targetPoint = points[i];
+            }
+        }
+
+        // local click handling.
+        document.addEventListener("click", function (event) {
+
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY);
+
+        });
+
+    </script>
+
+</body>
+
+</html>

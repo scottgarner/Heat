@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Stamp</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
+    <style>
+        .stamp {
+            position: absolute;
+            width: 128px;
+            height: 128px;
+            animation: scaleOut 1s;
+            transform: translate(-50%, -50%);
+
+            background-image: url('https://www.svgrepo.com/show/398485/thumbs-up.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        @keyframes scaleOut {
+            0% {
+                transform: translate(-50%, -50%) scale(1.0);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.0);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(0.0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+        "use strict";
+
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
+
+            const heat = new Heat(channel);
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y);
+            });
+        }
+
+        // Main container.
+        let main = document.getElementById('main');
+
+        // Draw clicks.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+
+            // Add image to dom.
+            let stampDiv = document.createElement("div");
+            stampDiv.classList.add("stamp");
+            stampDiv.style.top = screenY + "px";
+            stampDiv.style.left = screenX + "px";
+
+            // Animation callback.
+            stampDiv.onanimationend = (event) => {
+                main.removeChild(event.target);
+            };
+
+            main.appendChild(stampDiv);
+        }
+
+        // Local click handler.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY, "LocalTest");
+        });
+
+    </script>
+
+</body>
+
+</html>

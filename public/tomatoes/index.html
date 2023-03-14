@@ -1,0 +1,203 @@
+<!--
+    Many thanks to Viquitor Harden for suggesting this demo.
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tomatoes</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+</head>
+
+<body>
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+        "use strict";
+
+        const throwDuration = 750;
+        const splatDuration = 1500;
+
+        class SplatSprite extends PIXI.Sprite {
+            birth;
+            death;
+
+            startRotation;
+            endRotation;
+
+            startX;
+            startY;
+
+            endX;
+            endY;
+
+            constructor(x, y) {
+                super(splatTexture);
+
+                this.startX = this.x = x;
+                this.startY = this.y = y;
+
+                this.endX = this.startX;
+                this.endY = app.screen.height + 64;
+
+                this.scale.set(1.5);
+                this.anchor.set(0.5)
+
+                this.birth = Date.now();
+                this.death = this.birth + splatDuration;
+
+                this.startRotation = this.rotation = (Math.random() * Math.PI * 2.0);
+                this.endRotation = this.startRotation + (Math.random() - .5) * Math.PI * .5;
+            }
+
+            update() {
+                let age = (Date.now() - this.birth) / (this.death - this.birth);
+
+                if (age >= 1) {
+                    this.destroy();
+                } else {
+                    // this.scale.set((1 - age));
+                    // this.x = lerp(this.startX, this.endX, age);
+                    // this.y = lerp(this.startY, this.endY, age);
+                    this.x = lerp(this.startX, this.endX, easeInExpo(age));
+                    this.y = lerp(this.startY, this.endY, easeInExpo(age));
+                    this.rotation = (lerp(this.startRotation, this.endRotation, easeInExpo(age)));
+                }
+            }
+        }
+
+        class TomatoSprite extends PIXI.Sprite {
+            birth;
+            death;
+
+            startRotation;
+            endRotation;
+
+            startX;
+            startY;
+
+            endX;
+            endY;
+
+            constructor(x, y) {
+                super(tomatoTexture);
+
+                // this.scale.set(.1);
+                this.startRotation = this.rotation = (Math.random() * Math.PI * 2.0);
+                this.endRotation = this.startRotation + (Math.random() - .5) * Math.PI;
+
+                this.startX = this.x = Math.random() * app.screen.width;
+                this.startY = this.y = app.screen.height + 64;
+
+                this.endX = x;
+                this.endY = y;
+
+                this.anchor.set(0.5)
+                this.birth = Date.now();
+                this.death = this.birth + throwDuration;
+            }
+
+            update() {
+                let age = (Date.now() - this.birth) / (this.death - this.birth);
+
+                if (age >= 1) {
+
+                    // Create splat.
+                    let sprite = new SplatSprite(this.x, this.y);
+                    app.stage.addChild(sprite);
+
+                    // Destroy
+                    this.destroy();
+
+                } else {
+                    // this.scale.set((1 - age));
+                    this.x = lerp(this.startX, this.endX, (age));
+                    this.y = lerp(this.startY, this.endY, (age));
+                    this.rotation = (lerp(this.startRotation, this.endRotation, age));
+                }
+            }
+        }
+
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
+
+            const heat = new Heat(channel);
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y);
+            });
+        }
+
+        // Main container.
+        let main = document.getElementById('main');
+
+        // Pixi setup.
+        let app = new PIXI.Application({
+            transparent: true,
+            resizeTo: main,
+            autoDensity: true,
+            resolution: devicePixelRatio,
+        });
+        document.getElementById('main').appendChild(app.view);
+
+        const tomatoTexture = PIXI.Texture.from('sprites/tomato.svg');
+        const splatTexture = PIXI.Texture.from('sprites/splat.svg');
+
+
+        // Draw clicks.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+
+            let sprite = new TomatoSprite(screenX, screenY);
+            app.stage.addChild(sprite);
+        }
+
+        // Render loop.
+        app.ticker.add(function (delta) {
+            for (let i = app.stage.children.length - 1; i >= 0; i--) {
+                let sprite = app.stage.getChildAt(i);
+                sprite.update();
+            };
+        });
+
+        // Local click handler.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY, "LocalTest");
+        });
+
+        function lerp(start, end, t) {
+            return ((1 - t) * start) + (t * end);
+        }
+
+        function easeInCubic(x) {
+            return x * x * x;
+        }
+
+        function easeInCirc(x) {
+            return 1 - Math.sqrt(1 - Math.pow(x, 2));
+        }
+
+        function easeInExpo(x) {
+            return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
+        }
+
+    </script>
+
+</body>
+
+</html>

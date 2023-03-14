@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello World</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <!-- Container for incoming Heat data. -->
+    <pre id="data">Waiting for data.</pre>
+
+    <script>
+        // Set your ChannelId in the URL or replace with your own channel ID.
+        const params = (new URL(document.location)).searchParams;
+        const channel = params.get("channel") ||
+            params.get("channelId") ||
+            params.get("channelID") ||
+            97032862;
+
+        // Connect to the Heat back-end.
+        let url = `wss://heat-api.j38.net/channel/${channel}`;
+        let ws = new WebSocket(url);
+
+        // Connection successful. 
+        ws.addEventListener('open', () => {
+            console.log(`Connection open to Heat API server, channel ${channel}.`);
+        });
+
+        // Message received.
+        ws.addEventListener('message', (message) => {
+            // Parse message data.
+            let data = JSON.parse(message.data);
+
+            // Write to console.
+            console.log(data);
+
+            // Display in the DOM.
+            document.getElementById('data').innerText = JSON.stringify(data, null, ' ');
+        });
+    </script>
+</body>
+
+</html>

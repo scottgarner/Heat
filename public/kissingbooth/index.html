@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Kissing Booth</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/css/screen.css" media="screen" />
+
+    <style>
+        body.demo #main {
+            background: url('textures/background.svg') no-repeat center bottom fixed;
+            background-size: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.0.2/browser/pixi.min.js"></script>
+
+    <script src="/js/demo.js"></script>
+    <script src="/js/heat.js"></script>
+
+    <script>
+        "use strict";
+
+        // Initialize Heat.
+        {
+            const params = (new URL(document.location)).searchParams;
+            const channel = params.get("channel") ||
+                params.get("channelId") ||
+                params.get("channelID") ||
+                97032862;
+
+            const heat = new Heat(channel);
+            heat.addEventListener('click', (e) => {
+                drawClick(e.detail.x, e.detail.y);
+            });
+        }
+
+        // Main container.
+        let main = document.getElementById('main');
+
+        // Pixi setup.
+        let app = new PIXI.Application({
+            resizeTo: main,
+            resolution: devicePixelRatio,
+            autoDensity: true,
+            transparent: true
+        });
+        main.appendChild(app.view);
+
+        // Container for kisses.
+        let sprites = new PIXI.ParticleContainer(10000, {
+            scale: true,
+            position: true,
+            rotation: true,
+            uvs: true
+        });
+        sprites.blendMode = PIXI.BLEND_MODES.SCREEN;
+        app.stage.addChild(sprites);
+
+        // Kiss spritesheet. 
+        let kissesTexture = PIXI.BaseTexture.from("sprites/kisses.png");
+        let kisses = [
+            new PIXI.Texture(kissesTexture, new PIXI.Rectangle(0, 0, 128, 128)),
+            new PIXI.Texture(kissesTexture, new PIXI.Rectangle(128, 0, 128, 128)),
+            new PIXI.Texture(kissesTexture, new PIXI.Rectangle(0, 128, 128, 128)),
+            new PIXI.Texture(kissesTexture, new PIXI.Rectangle(128, 128, 128, 128))
+        ];
+
+        // Draw clicks.
+        function drawClick(clickX, clickY) {
+            const screenX = parseInt(clickX * main.clientWidth);
+            const screenY = parseInt(clickY * main.clientHeight);
+
+            const kissIndex = Math.floor(Math.random() * kisses.length);
+            const kiss = PIXI.Sprite.from(kisses[kissIndex]);
+
+            kiss.anchor.set(0.5);
+            kiss.x = screenX;
+            kiss.y = screenY;
+            kiss.rotation = (Math.random() * (Math.PI / 2.0)) - (Math.PI / 4.0);
+            kiss.tint = 0xc0c0c0 + (0x404040 * Math.random());
+
+            kiss.birth = Date.now();
+            kiss.death = kiss.birth + 1000;
+
+            sprites.addChild(kiss);
+        }
+
+        // Render loop.
+        app.ticker.add((delta) => {
+            for (let i = sprites.children.length - 1; i >= 0; i--) {
+                let kiss = sprites.getChildAt(i);
+                let age = (Date.now() - kiss.birth) / (kiss.death - kiss.birth);
+
+                if (age >= 1) {
+                    kiss.destroy();
+                } else {
+                    kiss.scale.set((1 - age));
+                }
+            };
+        });
+
+        // Handle local clicks.
+        document.addEventListener("click", function (event) {
+            const normalizedX = (event.clientX * 1.0 / window.innerWidth).toPrecision(3);
+            const normalizedY = (event.clientY * 1.0 / window.innerHeight).toPrecision(3);
+
+            drawClick(normalizedX, normalizedY);
+        });
+    </script>
+</body>
+
+</html>

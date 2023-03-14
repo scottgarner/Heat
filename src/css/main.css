@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+    html,
+    body {
+        @apply h-full;
+    }
+
+    h1 {
+        @apply text-xl;
+        @apply font-medium;
+        @apply text-gray-800;
+    }
+
+    h2 {
+        @apply font-medium;
+        @apply text-gray-600;
+    }
+
+    .info {
+        @apply space-y-4;
+    }
+
+    .info a {
+        @apply text-purple-800;
+    }
+}
