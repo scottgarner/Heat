@@ -17,7 +17,7 @@ import { Icon } from "astro-icon";
             </div>
             <div
                 x-show="!loaded"
-                class="flexx col-span-full text-center text-white justify-center items-center text-xl"
+                class="flex min-h-[16em] col-span-full text-center text-white justify-center items-center text-xl"
             >
                 <Icon
                     name="fluent:spinner-ios-20-filled"
@@ -88,7 +88,7 @@ import { Icon } from "astro-icon";
                 json.forEach(async (channel) => {
                     this.channels.push({
                         ...channel,
-                        url: "https://twitch.tv/" + channel.user_name,
+                        url: "https://twitch.tv/" + channel.user_login,
                         thumbnail_url: channel.thumbnail_url
                             .replace("{width}", "320")
                             .replace("{height}", "180"),

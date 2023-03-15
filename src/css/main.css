@@ -23,10 +23,10 @@
     }
 
     .info {
-        @apply space-y-4;
+        @apply space-y-3;
     }
 
     .info a {
-        @apply text-purple-800;
+        @apply text-purple-600;
     }
 }
