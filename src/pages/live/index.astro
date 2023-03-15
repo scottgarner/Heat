@@ -6,11 +6,11 @@ import Header from "../../components/Header.astro";
 import { Icon } from "astro-icon";
 ---
 
-<Layout title="Status">
+<Layout title="Live">
     <div class="flex flex-col items-center">
         <div
             class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-r lg:grid-cols-4 2xl:grid-cols-5 px-4 gap-2 min-w-[75%] justify-items-center"
-            x-data="status()"
+            x-data="liveData()"
         >
             <div class="col-span-full w-full">
                 <Header />
@@ -76,7 +76,7 @@ import { Icon } from "astro-icon";
 <style scoped></style>
 
 <script is:inline>
-    function status() {
+    function liveData() {
         return {
             channels: [],
             loaded: false,
