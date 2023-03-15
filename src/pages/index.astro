@@ -1,5 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Support from "../components/Support.astro";
+import { Icon } from "astro-icon";
 
 const demos = new Map([
 	["HeatMap", "/heatmap/"],
@@ -14,16 +16,29 @@ const demos = new Map([
 ---
 
 <Layout title="Home">
-	<div class="flex flex-col justify-center items-center h-full">
+	<div
+		class="flex flex-col justify-center items-center h-full w-full max-w-md m-auto px-2"
+	>
 		<a href="/"><img src="/images/heat.svg" width="360" height="128" /></a>
 
+		<div class="mt-6 mb-6 w-full flex justify-items-stretch gap-2">
+			<a
+				class="transition duration-300 border-2 border-orange-400 text-orange-400 font-semibold hover:bg-orange-400 hover:text-white hover:border-white rounded py-2 px-4 w-full block text-center"
+				href="/about">About</a
+			>
+			<a
+				class="transition duration-300 border-2 border-orange-400 text-orange-400 font-semibold hover:bg-orange-400 hover:text-white hover:border-white rounded py-2 px-4 w-full block text-center"
+				href="/help">Help</a
+			>
+		</div>
+
 		<div
-			class="flex flex-wrap justify-center text-white gap-2 my-8 uppercase w-full max-w-md"
+			class="grid grid-cols-4 justify-center justify-items-stretch text-white gap-2 mb-6 w-full"
 		>
 			{
 				[...demos].map(([key, value]) => (
 					<a
-						class="demo p-2 rounded border border-white block hover:bg-white/50"
+						class="transition duration-300 demo p-2 rounded border-2 border-white block hover:bg-white/50 text-center"
 						href={value}
 					>
 						{key}
@@ -31,22 +46,53 @@ const demos = new Map([
 				))
 			}
 		</div>
-		<div class="text-xs font-light uppercase text-white/50">
+
+		<div class="flex justify-center mb-2 gap-1 text-white/50 w-full">
+			<a href="https://github.com/scottgarner/Heat">
+				<Icon
+					class="hover:text-white inline w-6 mr-1"
+					name="fa-brands:github"
+				/>
+			</a>
+			<a href="https://twitch.tv/scottmadethis">
+				<Icon
+					class="hover:text-white inline w-6 mr-1"
+					name="fa-brands:twitch"
+				/>
+			</a>
+			<a href="https://discord.gg/GtAffRP">
+				<Icon
+					class="hover:text-white inline w-6 mr-1"
+					name="fa-brands:discord"
+				/>
+			</a>
+			<a href="https://patreon.com/scottmadethis">
+				<Icon
+					class="hover:text-white inline w-6 mr-1"
+					name="fa-brands:patreon"
+				/>
+			</a>
+			<a href="https://ko-fi.com/scottmadethis">
+				<Icon
+					class="hover:text-white inline w-6 mr-1"
+					name="cib:ko-fi"
+				/>
+			</a>
+		</div>
+
+		<hr class="w-full h-px mb-2 bg-white/50 border-none" />
+
+		<div class="text-xs font-light uppercase text-white/50 mb-2">
 			&copy; <a href="https://scottmadethis.net">Scott Garner</a> &bull;
-			<a href="/about">About</a> &bull;
-			<a href="/help">Help</a> &bull;
-			<a href="/status">Status</a>
+			<a class="hover:text-white" href="/about">About</a> &bull;
+			<a class="hover:text-white" href="/help">Help</a> &bull;
+			<a class="hover:text-white" href="/status">Status</a> &bull;
+			<a class="hover:text-white" href="/terms">Terms</a>
 		</div>
 	</div>
 </Layout>
 
-<style is:global>
-	.btn-container {
-		position: absolute;
-		bottom: 1em;
-		left: 1em;
-	}
-</style>
+<Support />
 
 <script is:inline>
 	(function () {
@@ -64,13 +110,4 @@ const demos = new Map([
 			demoElement.setAttribute("href", href);
 		}
 	})();
-</script>
-
-<script
-	type="text/javascript"
-	src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"
-></script>
-<script is:inline type="text/javascript">
-	kofiwidget2.init("Support Me on Ko-fi", "#0ab89d", "H2H0I5NI8");
-	kofiwidget2.draw();
 </script>

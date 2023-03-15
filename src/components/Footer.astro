@@ -1,7 +1,47 @@
+---
+import { Icon } from "astro-icon";
+---
+
 <footer
-    class="my-4 text-center justify-content align-content text-xs font-light uppercase text-white opacity-50"
+    class="flex flex-col sm:flex-row-reverse sm:justify-between items-center my-2 w-full"
 >
-    &copy; <a href="https://scottmadethis.net/">Scott Garner</a> 2019-2023 &bull;
-    <a href="/">Home</a> &bull;
-    <a href="/terms">Terms</a>
+    <div class="flex justify-center gap-1 text-white/50">
+        <a href="https://github.com/scottgarner/Heat">
+            <Icon
+                class="hover:text-white inline w-6 mr-1"
+                name="fa-brands:github"
+            />
+        </a>
+        <a href="https://twitch.tv/scottmadethis">
+            <Icon
+                class="hover:text-white inline w-6 mr-1"
+                name="fa-brands:twitch"
+            />
+        </a>
+        <a href="https://discord.gg/GtAffRP">
+            <Icon
+                class="hover:text-white inline w-6 mr-1"
+                name="fa-brands:discord"
+            />
+        </a>
+        <a href="https://patreon.com/scottmadethis">
+            <Icon
+                class="hover:text-white inline w-6 mr-1"
+                name="fa-brands:patreon"
+            />
+        </a>
+        <a href="https://ko-fi.com/scottmadethis">
+            <Icon class="hover:text-white inline w-6 mr-1" name="cib:ko-fi" />
+        </a>
+    </div>
+
+    <hr class="w-64 h-px my-2 bg-white/50 border-none visible sm:hidden" />
+
+    <div class="text-xs font-light uppercase text-white/50">
+        &copy; <a href="https://scottmadethis.net">Scott Garner</a> &bull;
+        <a class="hover:text-white" href="/about">About</a> &bull;
+        <a class="hover:text-white" href="/help">Help</a> &bull;
+        <a class="hover:text-white" href="/status">Status</a> &bull;
+        <a class="hover:text-white" href="/terms">Terms</a>
+    </div>
 </footer>

@@ -2,6 +2,8 @@
 import Layout from "../../layouts/Layout.astro";
 import Footer from "../../components/Footer.astro";
 import Header from "../../components/Header.astro";
+
+import { Icon } from "astro-icon";
 ---
 
 <Layout title="Status">
@@ -13,7 +15,14 @@ import Header from "../../components/Header.astro";
             <div class="col-span-full w-full">
                 <Header />
             </div>
-            <div x-show="!loaded" class="col-span-full text-center text-white">
+            <div
+                x-show="!loaded"
+                class="flexx col-span-full text-center text-white justify-center items-center text-xl"
+            >
+                <Icon
+                    name="fluent:spinner-ios-20-filled"
+                    class="animate-spin inline w-6 h-6 mb-1"
+                />
                 Loading...
             </div>
             <template x-for="channel in channels">
@@ -21,7 +30,7 @@ import Header from "../../components/Header.astro";
                     class="card w-full relative border border-purple-400 rounded-lg bg-white overflow-hidden"
                 >
                     <div
-                        class="absolute w-full flex justify-between items-center p-4 bg-black/50 pointer-events-none"
+                        class="absolute w-full flex justify-between p-4 bg-black/50 pointer-events-none"
                         style="backdrop-filter:blur(2px)"
                     >
                         <div
@@ -30,13 +39,9 @@ import Header from "../../components/Header.astro";
                         >
                         </div>
                         <div
-                            class="bg-red-600 rounded p-1 flex items-center justify-center min-w-[4em] text-white font-bold"
+                            class="bg-red-600 rounded p-1 flex justify-center items-center min-w-[4em] text-white font-bold"
                         >
-                            <img
-                                class="w-4 h-4 mr-1"
-                                style="filter: invert(1)"
-                                src="https://www.svgrepo.com/show/501194/eye.svg"
-                            />
+                            <Icon name="ph:eye-fill" class="w-4 h-4 mr-1" />
                             <span x-text="channel.viewer_count"></span>
                         </div>
                     </div>
@@ -60,9 +65,12 @@ import Header from "../../components/Header.astro";
                     </div>
                 </div>
             </template>
+
+            <div class="col-span-full w-full">
+                <Footer />
+            </div>
         </div>
     </div>
-    <Footer />
 </Layout>
 
 <style scoped></style>
