@@ -17,22 +17,24 @@ import Header from "../../components/Header.astro";
                 Loading...
             </div>
             <template x-for="channel in channels">
-                <!-- .card {
-        position: relative;
-        border: 1px solid gray;
-        border-radius: 0.5em;
-        overflow: hidden;
-        background: #efefef;
-    } -->
                 <div
                     class="card w-full relative border border-purple-400 rounded-lg bg-white overflow-hidden"
                 >
-                    <div class="stream">
-                        <div class="broadcaster" x-text="channel.user_name">
+                    <div
+                        class="absolute w-full flex justify-between items-center p-4 bg-black/50 pointer-events-none"
+                        style="backdrop-filter:blur(2px)"
+                    >
+                        <div
+                            class="flex items-center text-lg font-bold text-white"
+                            x-text="channel.user_name"
+                        >
                         </div>
-                        <div class="viewers">
+                        <div
+                            class="bg-red-600 rounded p-1 flex items-center justify-center min-w-[4em] text-white font-bold"
+                        >
                             <img
-                                class="eye"
+                                class="w-4 h-4 mr-1"
+                                style="filter: invert(1)"
                                 src="https://www.svgrepo.com/show/501194/eye.svg"
                             />
                             <span x-text="channel.viewer_count"></span>
@@ -48,9 +50,13 @@ import Header from "../../components/Header.astro";
                             /></a
                         >
                     </div>
-                    <div class="data">
-                        <div class="category" x-text="channel.game_name"></div>
-                        <div x-text="channel.title"></div>
+                    <div class="px-4 py-2">
+                        <div
+                            class="text-lg font-bold mb-2"
+                            x-text="channel.game_name"
+                        >
+                        </div>
+                        <div class="mb-2" x-text="channel.title"></div>
                     </div>
                 </div>
             </template>
@@ -59,61 +65,7 @@ import Header from "../../components/Header.astro";
     <Footer />
 </Layout>
 
-<style scoped>
-    .data {
-        padding: 1em;
-    }
-
-    .data > div {
-        padding-bottom: 0.5em;
-    }
-
-    .stream {
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(2px);
-        padding: 1em;
-        display: flex;
-        justify-items: center;
-        justify-content: space-between;
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        pointer-events: none;
-    }
-
-    .broadcaster {
-        display: flex;
-        align-items: center;
-        font-size: 1.2em;
-        font-weight: bold;
-        color: white;
-    }
-
-    .viewers {
-        background: red;
-        border-radius: 0.25em;
-        padding: 0.25em;
-        color: white;
-        font-weight: bold;
-        min-width: 2em;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .eye {
-        filter: invert(1);
-        width: 1em;
-        height: 1em;
-        margin-right: 0.25em;
-    }
-
-    .category {
-        font-size: 1.1em;
-        font-weight: bold;
-    }
-</style>
+<style scoped></style>
 
 <script is:inline>
     function status() {
@@ -126,7 +78,6 @@ import Header from "../../components/Header.astro";
                 );
                 let json = await response.json();
                 json.forEach(async (channel) => {
-                    // if (!this.channels.has(channel.user_id)) {
                     this.channels.push({
                         ...channel,
                         url: "https://twitch.tv/" + channel.user_name,
@@ -134,36 +85,9 @@ import Header from "../../components/Header.astro";
                             .replace("{width}", "320")
                             .replace("{height}", "180"),
                     });
-                    // }
                 });
                 this.loaded = true;
             },
         };
     }
-
-    /*
-export default {
-  data() {
-    return {
-      channels: new Map(),
-    };
-  },
-  async created() {
-    let response = await fetch("https://heat-api-staging.j38.workers.dev/live");
-    let json = await response.json();
-
-    json.forEach(async (channel) => {
-      // if (!this.channels.has(channel.user_id)) {
-      this.channels.set(channel.user_id, {
-        ...channel,
-        url: "https://twitch.tv/" + channel.user_name,
-        thumbnail_url: channel.thumbnail_url.replace("{width}", "320").replace("{height}", "180")
-      });
-      console.log(channel);
-      // }
-    });
-
-  },
-};
-*/
 </script>
